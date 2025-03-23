@@ -2,7 +2,8 @@
     "manifest_version": 3,
     "name": "Grammar Fixer",
     "version": "1.0",
-    "permissions": ["contextMenus", "activeTab", "scripting"],
+    "permissions": ["contextMenus", "activeTab", "scripting", "storage"],
+    "host_permissions": ["https://api.openai.com/*"],
     "background": {
       "service_worker": "background.js",
       "type": "module"
@@ -12,6 +13,7 @@
       "js": ["content-script.js"],
       "all_frames": true
     }],
+    "options_page": "options.html",
     "icons": {
       "48": "icons/icon-48.png"
     }

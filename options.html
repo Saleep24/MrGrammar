@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Grammar Fixer Options</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: #333;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    button {
+      background-color: #4285f4;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button:hover {
+      background-color: #3367d6;
+    }
+    .status {
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    .success {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    .error {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+  </style>
+</head>
+<body>
+  <h1>Grammar Fixer Settings</h1>
+  <div class="form-group">
+    <label for="api-key">OpenAI API Key:</label>
+    <input type="text" id="api-key" placeholder="sk-...">
+    <p>You need an OpenAI API key to use this extension. Get one at <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com/api-keys</a></p>
+  </div>
+  <div class="form-group">
+    <label for="model">OpenAI Model:</label>
+    <select id="model">
+      <option value="gpt-3.5-turbo">GPT-3.5 Turbo (Faster, Lower Cost)</option>
+      <option value="gpt-4">GPT-4 (Higher Quality, Higher Cost)</option>
+    </select>
+  </div>
+  <button id="save">Save Settings</button>
+  <div id="status" class="status" style="display: none;"></div>
+
+  <script src="options.js"></script>
+</body>
+</html> 
