@@ -2,6 +2,7 @@
     "manifest_version": 3,
     "name": "Grammar Fixer",
     "version": "1.0",
+    "description": "Fix grammar and polish text with OpenAI directly in your browser.",
     "permissions": ["contextMenus", "activeTab", "scripting", "storage"],
     "host_permissions": ["https://api.openai.com/*"],
     "background": {
@@ -16,5 +17,14 @@
     "options_page": "options.html",
     "icons": {
       "48": "icons/icon-48.png"
+    },
+    "commands": {
+      "fix-grammar": {
+        "suggested_key": {
+          "default": "Ctrl+Shift+G",
+          "mac": "Command+Shift+G"
+        },
+        "description": "Fix grammar of selected text"
+      }
     }
   }

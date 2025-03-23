@@ -6,6 +6,7 @@ A browser extension that fixes grammar and polishes text directly in your browse
 ## Features
 - ✅ **One-click grammar correction** via right-click context menu.
 - ✅ **Powered by OpenAI (GPT-3.5/4)** for human-like accuracy.
+- ✅ **Keyboard shortcuts** for faster text correction.
 - ✅ Works in Gmail, Google Docs, CMS, and most editable fields.
 - ✅ Fallback to clipboard copy for non-editable text.
 - ✅ Lightweight and easy to set up.
@@ -19,9 +20,19 @@ A browser extension that fixes grammar and polishes text directly in your browse
 
 ## Usage
 1. Highlight the text you want to correct.
-2. Right-click and select "Fix Grammar with AI" from the context menu.
+2. Either:
+   - Right-click and select "Fix Grammar with AI" from the context menu, or
+   - Use the keyboard shortcut: `Ctrl+Shift+G` (Windows/Linux) or `Command+Shift+G` (Mac)
 3. Wait a moment while the API processes your text.
 4. The highlighted text will be automatically replaced with the corrected version.
+
+## Keyboard Shortcuts
+- **Fix Grammar**: `Ctrl+Shift+G` (Windows/Linux) or `Command+Shift+G` (Mac)
+
+You can customize these shortcuts by visiting:
+- Chrome: `chrome://extensions/shortcuts`
+- Edge: `edge://extensions/shortcuts`
+- Brave: `brave://extensions/shortcuts`
 
 ## Privacy
 - Your API key is stored securely in your browser's local storage.

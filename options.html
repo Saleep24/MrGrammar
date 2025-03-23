@@ -9,7 +9,7 @@
       max-width: 600px;
       margin: 0 auto;
     }
-    h1 {
+    h1, h2 {
       color: #333;
     }
     .form-group {
@@ -52,6 +52,29 @@
       background-color: #f8d7da;
       color: #721c24;
     }
+    .info-box {
+      background-color: #e8f4fd;
+      border: 1px solid #b3e5fc;
+      padding: 15px;
+      border-radius: 4px;
+      margin-top: 20px;
+    }
+    .keyboard {
+      display: inline-block;
+      background: #f7f7f7;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      box-shadow: 0 1px 0 rgba(0,0,0,0.2);
+      margin: 0 0.2em;
+      padding: 0.1em 0.6em;
+      font-family: Arial, sans-serif;
+      font-size: 0.85em;
+    }
+    hr {
+      margin: 25px 0;
+      border: 0;
+      border-top: 1px solid #eee;
+    }
   </style>
 </head>
 <body>
@@ -70,6 +93,20 @@
   </div>
   <button id="save">Save Settings</button>
   <div id="status" class="status" style="display: none;"></div>
+
+  <hr>
+  
+  <h2>Keyboard Shortcuts</h2>
+  <div class="info-box">
+    <p><strong>Fix Grammar:</strong> <span class="keyboard">Ctrl</span> + <span class="keyboard">Shift</span> + <span class="keyboard">G</span> (Windows/Linux) or <span class="keyboard">⌘</span> + <span class="keyboard">Shift</span> + <span class="keyboard">G</span> (Mac)</p>
+    <p>You can customize these shortcuts by visiting:</p>
+    <ul>
+      <li>Chrome: <code>chrome://extensions/shortcuts</code></li>
+      <li>Edge: <code>edge://extensions/shortcuts</code></li>
+      <li>Brave: <code>brave://extensions/shortcuts</code></li>
+    </ul>
+    <p><small>Simply highlight text and use the shortcut to fix grammar instantly, without using the right-click menu.</small></p>
+  </div>
 
   <script src="options.js"></script>
 </body>
