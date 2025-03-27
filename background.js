@@ -11,31 +11,77 @@ chrome.runtime.onInstalled.addListener(() => {
   // Handle right-click action
   chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     if (info.menuItemId === "fixGrammar" && info.selectionText) {
-      console.log("Text selected:", info.selectionText); // Debug log
-  
-      try {
-        const correctedText = await fixGrammarWithOpenAI(info.selectionText);
-        console.log("Corrected text:", correctedText); // Debug log
-  
-        // Send corrected text to the webpage
-        chrome.tabs.sendMessage(tab.id, {
-          action: "replaceText",
-          originalText: info.selectionText,
-          correctedText: correctedText
-        });
-      } catch (error) {
-        console.error("Error in background.js:", error); // Debug log
-        
-        // Alert the user if there's an API key issue
-        if (error.message.includes("API key")) {
-          chrome.tabs.sendMessage(tab.id, {
-            action: "showError",
-            message: "Please set your OpenAI API key in the extension options."
-          });
-        }
-      }
+      processSelectedText(info.selectionText, tab.id);
     }
   });
+
+  // Listen for keyboard shortcuts
+  chrome.commands.onCommand.addListener(async (command) => {
+    if (command === "fix-grammar") {
+      // Get the active tab
+      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tabs.length === 0) return;
+      
+      const activeTab = tabs[0];
+      
+      // Execute script to get selected text
+      const results = await chrome.scripting.executeScript({
+        target: { tabId: activeTab.id },
+        function: () => window.getSelection().toString()
+      });
+      
+      const selectedText = results[0].result;
+      if (!selectedText) {
+        // Show error if no text is selected
+        chrome.tabs.sendMessage(activeTab.id, {
+          action: "showError",
+          message: "Please select some text before using the keyboard shortcut."
+        });
+        return;
+      }
+      
+      // Process the selected text
+      processSelectedText(selectedText, activeTab.id);
+    }
+  });
+  
+  // Process selected text and send correction back to the content script
+  async function processSelectedText(text, tabId) {
+    console.log("Text selected:", text); // Debug log
+    
+    // Show loading indicator
+    chrome.tabs.sendMessage(tabId, {
+      action: "startProcessing"
+    });
+  
+    try {
+      const correctedText = await fixGrammarWithOpenAI(text);
+      console.log("Corrected text:", correctedText); // Debug log
+  
+      // Send corrected text to the webpage
+      chrome.tabs.sendMessage(tabId, {
+        action: "replaceText",
+        originalText: text,
+        correctedText: correctedText
+      });
+    } catch (error) {
+      console.error("Error in background.js:", error); // Debug log
+      
+      // Alert the user if there's an API key issue
+      if (error.message.includes("API key")) {
+        chrome.tabs.sendMessage(tabId, {
+          action: "showError",
+          message: "Please set your OpenAI API key in the extension options."
+        });
+      } else {
+        // Generic error message for other issues
+        chrome.tabs.sendMessage(tabId, {
+          action: "showError",
+          message: `Error: ${error.message || "Failed to process text"}`
+        });
+      }
+    }
+  }
   
   // OpenAI API call
   async function fixGrammarWithOpenAI(text) {

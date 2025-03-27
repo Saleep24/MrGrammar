@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Grammar Fixer</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      width: 300px;
+      padding: 15px;
+      color: #333;
+    }
+    h1 {
+      font-size: 18px;
+      margin-top: 0;
+      margin-bottom: 15px;
+      color: #4285f4;
+    }
+    .description {
+      font-size: 14px;
+      margin-bottom: 15px;
+      line-height: 1.4;
+    }
+    .shortcut-info {
+      background-color: #f5f5f5;
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 15px;
+      font-size: 13px;
+    }
+    .keyboard-shortcut {
+      font-weight: bold;
+      color: #4285f4;
+    }
+    .button-group {
+      display: flex;
+      justify-content: space-between;
+    }
+    button {
+      background-color: #4285f4;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      flex-grow: 1;
+      margin-right: 8px;
+    }
+    button:last-child {
+      margin-right: 0;
+    }
+    button:hover {
+      background-color: #3367d6;
+    }
+    .api-status {
+      font-size: 12px;
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid #eee;
+    }
+    .status-indicator {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 5px;
+    }
+    .status-connected {
+      background-color: #4caf50;
+    }
+    .status-disconnected {
+      background-color: #f44336;
+    }
+  </style>
+</head>
+<body>
+  <h1>Grammar Fixer</h1>
+  
+  <div class="description">
+    Fix grammar and polish text with AI directly in your browser. Select text, right-click or use keyboard shortcuts.
+  </div>
+  
+  <div class="shortcut-info">
+    <strong>Keyboard shortcut:</strong> 
+    <span class="keyboard-shortcut" id="keyboard-shortcut">Ctrl+Shift+G</span>
+  </div>
+  
+  <div class="button-group">
+    <button id="options-btn">Options</button>
+    <button id="help-btn">Help</button>
+  </div>
+  
+  <div class="api-status">
+    API Status: <span id="api-status-text">Checking...</span>
+    <span id="api-status-indicator" class="status-indicator"></span>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html> 
