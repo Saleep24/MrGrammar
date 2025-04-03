@@ -75,6 +75,12 @@
       border: 0;
       border-top: 1px solid #eee;
     }
+    .model-info {
+      font-size: 12px;
+      color: #666;
+      margin-top: 5px;
+      line-height: 1.4;
+    }
   </style>
 </head>
 <body>
@@ -88,8 +94,16 @@
     <label for="model">OpenAI Model:</label>
     <select id="model">
       <option value="gpt-3.5-turbo">GPT-3.5 Turbo (Faster, Lower Cost)</option>
-      <option value="gpt-4">GPT-4 (Higher Quality, Higher Cost)</option>
+      <option value="gpt-4o-mini">GPT-4o Mini (Better Quality, Moderate Cost)</option>
+      <option value="gpt-4">GPT-4 (Premium Quality, Higher Cost)</option>
+      <option value="gpt-4o">GPT-4o (Latest Model, Highest Quality)</option>
     </select>
+    <div class="model-info">
+      <strong>GPT-3.5 Turbo:</strong> Good for basic grammar fixes. Most economical option.<br>
+      <strong>GPT-4o Mini:</strong> Recommended! Better quality than 3.5 at reasonable cost.<br>
+      <strong>GPT-4:</strong> Excellent for complex text with nuanced grammar.<br>
+      <strong>GPT-4o:</strong> Latest model with the best quality for advanced corrections.
+    </div>
   </div>
   <button id="save">Save Settings</button>
   <div id="status" class="status" style="display: none;"></div>
