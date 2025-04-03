@@ -5,7 +5,7 @@ A browser extension that fixes grammar and polishes text directly in your browse
 
 ## Features
 - ✅ **One-click grammar correction** via right-click context menu.
-- ✅ **Powered by OpenAI (GPT-3.5/4)** for human-like accuracy.
+- ✅ **Powered by OpenAI's latest models** (GPT-3.5, GPT-4o Mini, GPT-4, GPT-4o).
 - ✅ **Keyboard shortcuts** for faster text correction.
 - ✅ **Loading indicator** shows when your text is being processed.
 - ✅ **Text statistics** displaying character, word, and sentence counts.
@@ -18,7 +18,11 @@ A browser extension that fixes grammar and polishes text directly in your browse
 1. Install the extension from the Chrome Web Store or load it as an unpacked extension.
 2. Get your OpenAI API key from [platform.openai.com/api-keys](https://platform.openai.com/api-keys).
 3. Click the extension icon, then click "Options" to open the settings page.
-4. Enter your OpenAI API key and choose your preferred model (GPT-3.5 Turbo or GPT-4).
+4. Enter your OpenAI API key and choose your preferred model:
+   - **GPT-3.5 Turbo**: Basic grammar fixes (lowest cost)
+   - **GPT-4o Mini**: ⭐ Recommended — better quality at reasonable cost
+   - **GPT-4**: Premium quality for complex text
+   - **GPT-4o**: Latest model with the highest quality
 5. Save your settings.
 
 ## Usage
