@@ -92,7 +92,29 @@ chrome.runtime.onInstalled.addListener(() => {
       throw new Error("API key not found. Please set up your OpenAI API key in the extension options.");
     }
     
-    const model = openaiModel || "gpt-3.5-turbo";
+    // Default to GPT-4o Mini if no model is selected
+    const model = openaiModel || "gpt-4o-mini";
+    
+    // Check text length and set appropriate max tokens based on model
+    const inputTokenEstimate = Math.ceil(text.length / 4); // Rough estimate of tokens
+    
+    // Set max tokens based on model (allowing room for response)
+    let maxTokens;
+    let temperature;
+    
+    if (model === "gpt-3.5-turbo") {
+      maxTokens = Math.min(3000, inputTokenEstimate * 1.5);
+      temperature = 0.3;
+    } else if (model === "gpt-4o-mini") {
+      maxTokens = Math.min(4000, inputTokenEstimate * 1.5);
+      temperature = 0.2;
+    } else if (model === "gpt-4o") {
+      maxTokens = Math.min(4000, inputTokenEstimate * 1.5);
+      temperature = 0.2;
+    } else { // gpt-4
+      maxTokens = Math.min(4000, inputTokenEstimate * 1.5);
+      temperature = 0.2;
+    }
     
     try {
       const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -106,15 +128,15 @@ chrome.runtime.onInstalled.addListener(() => {
           messages: [
             {
               role: "system",
-              content: "You are a helpful assistant that corrects grammar, spelling, and improves text. Keep the same meaning and tone, just fix errors and improve readability. Only return the corrected text without any explanations or additional comments."
+              content: "You are a professional grammar and writing expert. Your task is to correct grammar, spelling, punctuation, and improve text clarity and flow. Keep the same meaning, tone, and style of the original text. Only return the corrected version without explanations or comments."
             },
             {
               role: "user",
               content: text
             }
           ],
-          temperature: 0.3,
-          max_tokens: 1000
+          temperature: temperature,
+          max_tokens: maxTokens
         })
       });
   

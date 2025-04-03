@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     chrome.tabs.create({ url: 'https://github.com/yourusername/grammar-fix-extension#readme' });
   });
   
-  // Check API connection status
+  // Check API connection status and display model info
   checkApiStatus();
 });
 
@@ -22,13 +22,16 @@ async function checkApiStatus() {
   const statusIndicator = document.getElementById('api-status-indicator');
   
   try {
-    // Get API key from storage
-    const { openaiApiKey } = await chrome.storage.sync.get(['openaiApiKey']);
+    // Get API key and model from storage
+    const { openaiApiKey, openaiModel } = await chrome.storage.sync.get(['openaiApiKey', 'openaiModel']);
     
     if (!openaiApiKey) {
       setStatusDisconnected('API key not set');
       return;
     }
+    
+    // Set model info
+    const modelName = getModelDisplayName(openaiModel || 'gpt-4o-mini');
     
     // Make a simple request to test connectivity
     const response = await fetch('https://api.openai.com/v1/models', {
@@ -39,7 +42,7 @@ async function checkApiStatus() {
     });
     
     if (response.ok) {
-      setStatusConnected();
+      setStatusConnected(modelName);
     } else {
       const error = await response.json();
       setStatusDisconnected(error.error?.message || 'Connection error');
@@ -50,11 +53,22 @@ async function checkApiStatus() {
   }
 }
 
-function setStatusConnected() {
+function getModelDisplayName(modelId) {
+  const modelNames = {
+    'gpt-3.5-turbo': 'GPT-3.5 Turbo',
+    'gpt-4o-mini': 'GPT-4o Mini',
+    'gpt-4': 'GPT-4',
+    'gpt-4o': 'GPT-4o'
+  };
+  
+  return modelNames[modelId] || modelId;
+}
+
+function setStatusConnected(modelName) {
   const statusText = document.getElementById('api-status-text');
   const statusIndicator = document.getElementById('api-status-indicator');
   
-  statusText.textContent = 'Connected';
+  statusText.textContent = `Connected (${modelName})`;
   statusIndicator.className = 'status-indicator status-connected';
 }
 
