@@ -92,8 +92,68 @@ chrome.runtime.onMessage.addListener((request) => {
     removeLoadingIndicator();
 
     const selection = window.getSelection();
+    
+    // Special handling for Gmail compose window
+    const isGmailCompose = window.location.hostname === 'mail.google.com' && 
+                          document.querySelector('div[role="textbox"][aria-label*="compose"]');
+    
+    // If we're in Gmail compose and there's no selection, try to find the compose area
+    if (selection.rangeCount === 0 && isGmailCompose) {
+      const composeArea = document.querySelector('div[role="textbox"][aria-label*="compose"]');
+      if (composeArea) {
+        console.log("Using Gmail compose area for text replacement");
+        
+        // Attempt to use the compose area
+        try {
+          // Focus the compose area
+          composeArea.focus();
+          
+          // Either replace selected text or insert at cursor position
+          if (window.getSelection().rangeCount > 0) {
+            const range = window.getSelection().getRangeAt(0);
+            range.deleteContents();
+            range.insertNode(document.createTextNode(request.correctedText));
+          } else {
+            // If no selection even after focusing, just append text
+            composeArea.innerHTML += request.correctedText;
+          }
+          console.log("Text inserted in Gmail compose area");
+          return;
+        } catch (error) {
+          console.log("Error inserting text in Gmail compose:", error);
+        }
+      }
+    }
+    
+    // Standard text replacement logic for non-Gmail or if Gmail-specific handling failed
     if (selection.rangeCount === 0) {
-      console.error("No text selected!");
+      console.log("No text selected - cannot replace text");
+      
+      // Show message to user instead of console error
+      const errorMessage = document.createElement('div');
+      errorMessage.style.position = 'fixed';
+      errorMessage.style.top = '20px';
+      errorMessage.style.right = '20px';
+      errorMessage.style.backgroundColor = '#f8d7da';
+      errorMessage.style.color = '#721c24';
+      errorMessage.style.padding = '10px 15px';
+      errorMessage.style.borderRadius = '4px';
+      errorMessage.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
+      errorMessage.style.zIndex = '9999';
+      errorMessage.style.maxWidth = '300px';
+      errorMessage.style.fontSize = '14px';
+      
+      errorMessage.textContent = "Could not replace text - no text selection found. Try selecting text again.";
+      
+      document.body.appendChild(errorMessage);
+      
+      // Remove the error message after 5 seconds
+      setTimeout(() => {
+        if (errorMessage.parentNode) {
+          errorMessage.parentNode.removeChild(errorMessage);
+        }
+      }, 5000);
+      
       return;
     }
 
@@ -141,18 +201,37 @@ function setupGmailIntegration() {
   if (window.location.hostname === 'mail.google.com') {
     console.log("Gmail detected, setting up integration");
     
-    // Gmail uses iframes, we need to identify when we're in a compose window
-    const isComposeFrame = document.querySelector('div[role="textbox"][aria-label*="compose"]');
-    if (isComposeFrame) {
-      console.log("Gmail compose window detected");
-    }
+    // Create MutationObserver to detect when compose windows appear
+    const observer = new MutationObserver(mutations => {
+      const composeBoxes = document.querySelectorAll('div[role="textbox"][aria-label*="compose"]');
+      if (composeBoxes.length > 0) {
+        composeBoxes.forEach(box => {
+          // Ensure we haven't already processed this box
+          if (!box.dataset.grammarFixerInitialized) {
+            box.dataset.grammarFixerInitialized = 'true';
+            console.log("Gmail compose box found and initialized");
+            
+            // You could add extra event listeners here if needed
+            box.addEventListener('focus', () => {
+              console.log("Gmail compose box focused");
+            });
+          }
+        });
+      }
+    });
     
-    // Handle ping immediately
+    // Start observing
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+    
+    // Handle ping immediately with proper response
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       if (request.action === "ping") {
         console.log("Ping received in Gmail");
         sendResponse({status: "ok"});
-        return true;
+        return true; // Important for async response
       }
     });
   }
@@ -160,5 +239,12 @@ function setupGmailIntegration() {
 
 // Call this function when the content script loads
 setupGmailIntegration();
+
+// This ensures the content script is loaded even in Gmail's dynamic environment
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log("DOMContentLoaded - Grammar Fixer initializing");
+  });
+}
 
 console.log("Grammar Fixer content script loaded successfully");

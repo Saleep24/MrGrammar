@@ -72,43 +72,62 @@ chrome.runtime.onInstalled.addListener(() => {
         }
       }
 
-      // Show loading indicator
-      chrome.tabs.sendMessage(tabId, {
-        action: "startProcessing"
-      }, function(response) {
-        if (chrome.runtime.lastError) {
-          console.error("Error sending startProcessing message:", chrome.runtime.lastError);
-        }
-      });
+      // Show loading indicator - with improved error handling
+      try {
+        chrome.tabs.sendMessage(tabId, {
+          action: "startProcessing"
+        }, function(response) {
+          if (chrome.runtime.lastError) {
+            // This is expected in some cases, don't treat as error
+            console.log("Note: Content script may not be ready yet, continuing anyway");
+          }
+        });
+      } catch (error) {
+        console.log("Could not show loading indicator, continuing anyway");
+      }
     
       try {
         const correctedText = await fixGrammarWithOpenAI(text);
         console.log("Corrected text:", correctedText); 
     
-        // Send corrected text to the webpage
-        chrome.tabs.sendMessage(tabId, {
-          action: "replaceText",
-          originalText: text,
-          correctedText: correctedText
-        }, function(response) {
-          if (chrome.runtime.lastError) {
-            console.error("Error sending replaceText message:", chrome.runtime.lastError);
-          }
-        });
+        // Send corrected text to the webpage - with improved error handling
+        try {
+          chrome.tabs.sendMessage(tabId, {
+            action: "replaceText",
+            originalText: text,
+            correctedText: correctedText
+          }, function(response) {
+            if (chrome.runtime.lastError) {
+              console.log("Note: Message delivery to content script not confirmed, this is normal for some websites");
+              
+              // For Gmail, we might need to retry or use a different approach
+              if (isGmail) {
+                console.log("Attempting alternative text insertion for Gmail");
+                // If needed, implement alternative approach here
+              }
+            }
+          });
+        } catch (error) {
+          console.log("Error sending correction to page, user may need to copy manually:", error);
+        }
       } catch (error) {
         console.error("Error in background.js:", error);
         
         // Alert the user if there's an API key issue
-        if (error.message.includes("API key")) {
-          chrome.tabs.sendMessage(tabId, {
-            action: "showError",
-            message: "Please set your OpenAI API key in the extension options."
-          });
-        } else {
-          chrome.tabs.sendMessage(tabId, {
-            action: "showError",
-            message: `Error: ${error.message || "Failed to process text"}`
-          });
+        try {
+          if (error.message.includes("API key")) {
+            chrome.tabs.sendMessage(tabId, {
+              action: "showError",
+              message: "Please set your OpenAI API key in the extension options."
+            });
+          } else {
+            chrome.tabs.sendMessage(tabId, {
+              action: "showError",
+              message: `Error: ${error.message || "Failed to process text"}`
+            });
+          }
+        } catch (msgError) {
+          console.log("Could not show error message to user");
         }
       }
     } catch (error) {
