@@ -5,10 +5,10 @@ chrome.runtime.onInstalled.addListener(() => {
       title: "Fix Grammar with AI",
       contexts: ["selection"]
     });
-    console.log("Context menu created!"); // Debug log
+    console.log("Context menu created!"); 
   });
   
-  // Handle right-click action
+
   chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     if (info.menuItemId === "fixGrammar" && info.selectionText) {
       processSelectedText(info.selectionText, tab.id);
@@ -18,13 +18,13 @@ chrome.runtime.onInstalled.addListener(() => {
   // Listen for keyboard shortcuts
   chrome.commands.onCommand.addListener(async (command) => {
     if (command === "fix-grammar") {
-      // Get the active tab
+
       const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
       if (tabs.length === 0) return;
       
       const activeTab = tabs[0];
       
-      // Execute script to get selected text
+
       const results = await chrome.scripting.executeScript({
         target: { tabId: activeTab.id },
         function: () => window.getSelection().toString()
@@ -32,7 +32,7 @@ chrome.runtime.onInstalled.addListener(() => {
       
       const selectedText = results[0].result;
       if (!selectedText) {
-        // Show error if no text is selected
+   
         chrome.tabs.sendMessage(activeTab.id, {
           action: "showError",
           message: "Please select some text before using the keyboard shortcut."
@@ -40,7 +40,7 @@ chrome.runtime.onInstalled.addListener(() => {
         return;
       }
       
-      // Process the selected text
+
       processSelectedText(selectedText, activeTab.id);
     }
   });
@@ -49,14 +49,14 @@ chrome.runtime.onInstalled.addListener(() => {
   async function processSelectedText(text, tabId) {
     console.log("Text selected:", text); // Debug log
     
-    // Show loading indicator
+
     chrome.tabs.sendMessage(tabId, {
       action: "startProcessing"
     });
   
     try {
       const correctedText = await fixGrammarWithOpenAI(text);
-      console.log("Corrected text:", correctedText); // Debug log
+      console.log("Corrected text:", correctedText); 
   
       // Send corrected text to the webpage
       chrome.tabs.sendMessage(tabId, {
@@ -74,7 +74,7 @@ chrome.runtime.onInstalled.addListener(() => {
           message: "Please set your OpenAI API key in the extension options."
         });
       } else {
-        // Generic error message for other issues
+
         chrome.tabs.sendMessage(tabId, {
           action: "showError",
           message: `Error: ${error.message || "Failed to process text"}`
@@ -85,7 +85,7 @@ chrome.runtime.onInstalled.addListener(() => {
   
   // OpenAI API call
   async function fixGrammarWithOpenAI(text) {
-    // Get API key and model from storage
+
     const { openaiApiKey, openaiModel } = await chrome.storage.sync.get(['openaiApiKey', 'openaiModel']);
     
     if (!openaiApiKey) {
@@ -95,10 +95,10 @@ chrome.runtime.onInstalled.addListener(() => {
     // Default to GPT-4o Mini if no model is selected
     const model = openaiModel || "gpt-4o-mini";
     
-    // Check text length and set appropriate max tokens based on model
-    const inputTokenEstimate = Math.ceil(text.length / 4); // Rough estimate of tokens
     
-    // Set max tokens based on model (allowing room for response)
+    const inputTokenEstimate = Math.ceil(text.length / 4); 
+    
+
     let maxTokens;
     let temperature;
     
@@ -148,11 +148,10 @@ chrome.runtime.onInstalled.addListener(() => {
       const data = await response.json();
       console.log("OpenAI response:", data); // Debug log
       
-      // Extract and return the corrected text from the API response
       const correctedText = data.choices?.[0]?.message?.content?.trim() || text;
       return correctedText;
     } catch (error) {
       console.error("API Error:", error);
-      throw error; // Propagate the error to the caller
+      throw error; 
     }
   }
