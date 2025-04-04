@@ -103,16 +103,16 @@ chrome.runtime.onInstalled.addListener(() => {
     let temperature;
     
     if (model === "gpt-3.5-turbo") {
-      maxTokens = Math.floor(Math.min(3000, inputTokenEstimate * 1.5);
+      maxTokens = Math.min(3000, inputTokenEstimate * 1.5);
       temperature = 0.3;
     } else if (model === "gpt-4o-mini") {
-      maxTokens = Math.floor(Math.min(4000, inputTokenEstimate * 1.5);
+      maxTokens = Math.min(4000, inputTokenEstimate * 1.5);
       temperature = 0.2;
     } else if (model === "gpt-4o") {
-      maxTokens = Math.floor(Math.min(4000, inputTokenEstimate * 1.5);
+      maxTokens = Math.min(4000, inputTokenEstimate * 1.5);
       temperature = 0.2;
     } else { // gpt-4
-      maxTokens = Math.floor(Math.min(4000, inputTokenEstimate * 1.5);
+      maxTokens = Math.min(4000, inputTokenEstimate * 1.5);
       temperature = 0.2;
     }
     
