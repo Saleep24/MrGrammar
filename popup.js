@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Set correct keyboard shortcut based on platform
   const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
   const shortcutElem = document.getElementById('keyboard-shortcut');
-  shortcutElem.textContent = isMac ? 'Command+Shift+G' : 'Ctrl+Shift+G';
+  shortcutElem.textContent = isMac ? 'Command+Shift+E' : 'Ctrl+Shift+E';
   
   // Add button event listeners
   document.getElementById('options-btn').addEventListener('click', () => {

@@ -29,13 +29,13 @@ A browser extension that fixes grammar and polishes text directly in your browse
 1. Highlight the text you want to correct.
 2. Either:
    - Right-click and select "Fix Grammar with AI" from the context menu, or
-   - Use the keyboard shortcut: `Ctrl+Shift+G` (Windows/Linux) or `Command+Shift+G` (Mac)
+   - Use the keyboard shortcut: `Ctrl+Shift+E` (Windows/Linux) or `Command+Shift+E` (Mac)
 3. A loading indicator will appear while the text is being processed.
 4. The highlighted text will be automatically replaced with the corrected version.
 5. A notification with text statistics will appear, showing the changes in character count, word count, and sentence count.
 
 ## Keyboard Shortcuts
-- **Fix Grammar**: `Ctrl+Shift+G` (Windows/Linux) or `Command+Shift+G` (Mac)
+- **Fix Grammar**: `Ctrl+Shift+E` (Windows/Linux) or `Command+Shift+E` (Mac)
 
 You can customize these shortcuts by visiting:
 - Chrome: `chrome://extensions/shortcuts`

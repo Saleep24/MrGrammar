@@ -35,8 +35,8 @@
     "commands": {
       "fix-grammar": {
         "suggested_key": {
-          "default": "Ctrl+Shift+G",
-          "mac": "Command+Shift+G"
+          "default": "Ctrl+Shift+E",
+          "mac": "Command+Shift+E"
         },
         "description": "Fix grammar of selected text"
       }
