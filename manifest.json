@@ -3,8 +3,8 @@
     "name": "Grammar Fixer",
     "version": "1.0",
     "description": "Fix grammar and polish text with OpenAI directly in your browser.",
-    "permissions": ["contextMenus", "activeTab", "scripting", "storage"],
-    "host_permissions": ["https://api.openai.com/*"],
+    "permissions": ["contextMenus", "activeTab", "scripting", "storage", "tabs"],
+    "host_permissions": ["https://api.openai.com/*", "https://mail.google.com/*"],
     "background": {
       "service_worker": "background.js",
       "type": "module"
@@ -15,11 +15,19 @@
         "48": "icons/icon-48.png"
       }
     },
-    "content_scripts": [{
-      "matches": ["<all_urls>"],
-      "js": ["content-script.js"],
-      "all_frames": true
-    }],
+    "content_scripts": [
+      {
+        "matches": ["<all_urls>", "https://mail.google.com/*"],
+        "js": ["content-script.js"],
+        "all_frames": true,
+        "exclude_matches": ["https://docs.google.com/*"]
+      },
+      {
+        "matches": ["https://docs.google.com/document/*"],
+        "js": ["google-docs-content.js"],
+        "all_frames": true
+      }
+    ],
     "options_page": "options.html",
     "icons": {
       "48": "icons/icon-48.png"

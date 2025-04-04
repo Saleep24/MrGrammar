@@ -47,39 +47,72 @@ chrome.runtime.onInstalled.addListener(() => {
   
   // Process selected text and send correction back to the content script
   async function processSelectedText(text, tabId) {
-    console.log("Text selected:", text); // Debug log
-    
+    console.log("Text selected:", text);
 
-    chrome.tabs.sendMessage(tabId, {
-      action: "startProcessing"
-    });
-  
     try {
-      const correctedText = await fixGrammarWithOpenAI(text);
-      console.log("Corrected text:", correctedText); 
-  
-      // Send corrected text to the webpage
-      chrome.tabs.sendMessage(tabId, {
-        action: "replaceText",
-        originalText: text,
-        correctedText: correctedText
-      });
-    } catch (error) {
-      console.error("Error in background.js:", error); // Debug log
+      // Get tab info
+      const tabs = await chrome.tabs.query({active: true, currentWindow: true});
+      const isGmail = tabs.length > 0 && isGmailTab(tabs[0]);
       
-      // Alert the user if there's an API key issue
-      if (error.message.includes("API key")) {
-        chrome.tabs.sendMessage(tabId, {
-          action: "showError",
-          message: "Please set your OpenAI API key in the extension options."
-        });
-      } else {
-
-        chrome.tabs.sendMessage(tabId, {
-          action: "showError",
-          message: `Error: ${error.message || "Failed to process text"}`
-        });
+      if (isGmail) {
+        console.log("Processing Gmail content");
       }
+      
+      // Special handling for Gmail
+      if (isGmail) {
+        // Try to inject content script if needed
+        try {
+          await chrome.scripting.executeScript({
+            target: {tabId: tabId},
+            files: ['content-script.js']
+          });
+          console.log("Content script injected into Gmail");
+        } catch (e) {
+          console.log("Content script already present or failed to inject", e);
+        }
+      }
+
+      // Show loading indicator
+      chrome.tabs.sendMessage(tabId, {
+        action: "startProcessing"
+      }, function(response) {
+        if (chrome.runtime.lastError) {
+          console.error("Error sending startProcessing message:", chrome.runtime.lastError);
+        }
+      });
+    
+      try {
+        const correctedText = await fixGrammarWithOpenAI(text);
+        console.log("Corrected text:", correctedText); 
+    
+        // Send corrected text to the webpage
+        chrome.tabs.sendMessage(tabId, {
+          action: "replaceText",
+          originalText: text,
+          correctedText: correctedText
+        }, function(response) {
+          if (chrome.runtime.lastError) {
+            console.error("Error sending replaceText message:", chrome.runtime.lastError);
+          }
+        });
+      } catch (error) {
+        console.error("Error in background.js:", error);
+        
+        // Alert the user if there's an API key issue
+        if (error.message.includes("API key")) {
+          chrome.tabs.sendMessage(tabId, {
+            action: "showError",
+            message: "Please set your OpenAI API key in the extension options."
+          });
+        } else {
+          chrome.tabs.sendMessage(tabId, {
+            action: "showError",
+            message: `Error: ${error.message || "Failed to process text"}`
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error in processSelectedText:", error);
     }
   }
   
@@ -157,4 +190,8 @@ chrome.runtime.onInstalled.addListener(() => {
       console.error("API Error:", error);
       throw error; 
     }
+  }
+
+  function isGmailTab(tab) {
+    return tab && tab.url && tab.url.includes('mail.google.com');
   }
