@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
   
   document.getElementById('help-btn').addEventListener('click', () => {
-    chrome.tabs.create({ url: 'https://github.com/yourusername/grammar-fix-extension#readme' });
+    chrome.tabs.create({ url: 'https://github.com/Saleep24' });
   });
   
   // Check API connection status and display model info
