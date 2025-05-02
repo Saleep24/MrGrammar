@@ -1,10 +1,10 @@
 document.addEventListener('DOMContentLoaded', async () => {
-  // Set correct keyboard shortcut based on platform
+
   const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
   const shortcutElem = document.getElementById('keyboard-shortcut');
   shortcutElem.textContent = isMac ? 'Command+Shift+E' : 'Ctrl+Shift+E';
   
-  // Add button event listeners
+
   document.getElementById('options-btn').addEventListener('click', () => {
     chrome.runtime.openOptionsPage();
   });
@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     chrome.tabs.create({ url: 'https://github.com/Saleep24' });
   });
   
-  // Check API connection status and display model info
+
   checkApiStatus();
 });
 
@@ -22,7 +22,7 @@ async function checkApiStatus() {
   const statusIndicator = document.getElementById('api-status-indicator');
   
   try {
-    // Get API key and model from storage
+
     const { openaiApiKey, openaiModel } = await chrome.storage.sync.get(['openaiApiKey', 'openaiModel']);
     
     if (!openaiApiKey) {
@@ -30,10 +30,9 @@ async function checkApiStatus() {
       return;
     }
     
-    // Set model info
+ 
     const modelName = getModelDisplayName(openaiModel || 'gpt-4o-mini');
-    
-    // Make a simple request to test connectivity
+
     const response = await fetch('https://api.openai.com/v1/models', {
       method: 'GET',
       headers: {

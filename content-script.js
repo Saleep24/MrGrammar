@@ -237,8 +237,181 @@ function setupGmailIntegration() {
   }
 }
 
-// Call this function when the content script loads
+// Outlook-specific integration
+function setupOutlookIntegration() {
+  if (window.location.hostname.includes('outlook.office.com') || 
+      window.location.hostname.includes('outlook.live.com')) {
+    console.log("Outlook detected, setting up integration");
+    
+    // Create MutationObserver to detect when compose windows appear
+    const observer = new MutationObserver(mutations => {
+      // Look for the compose area in both new email and reply modes
+      const composeAreas = document.querySelectorAll([
+        'div[role="textbox"][aria-label="Message body"]', // New email
+        'div[role="textbox"][aria-label="Reply body"]',   // Reply
+        'div[role="textbox"][aria-label="Forward body"]'  // Forward
+      ].join(','));
+      
+      if (composeAreas.length > 0) {
+        composeAreas.forEach(area => {
+          // Ensure we haven't already processed this area
+          if (!area.dataset.grammarFixerInitialized) {
+            area.dataset.grammarFixerInitialized = 'true';
+            console.log("Outlook compose area found and initialized");
+            
+            // Add focus event listener
+            area.addEventListener('focus', () => {
+              console.log("Outlook compose area focused");
+            });
+          }
+        });
+      }
+    });
+    
+    // Start observing
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+  }
+}
+
+// Update the text replacement logic to handle Outlook
+function replaceTextInEditor(correctedText) {
+  const selection = window.getSelection();
+  
+  // Check if we're in Outlook
+  const isOutlook = window.location.hostname.includes('outlook.office.com') || 
+                   window.location.hostname.includes('outlook.live.com');
+  
+  if (isOutlook) {
+    // Try to find the Outlook compose area
+    const composeArea = document.querySelector([
+      'div[role="textbox"][aria-label="Message body"]',
+      'div[role="textbox"][aria-label="Reply body"]',
+      'div[role="textbox"][aria-label="Forward body"]'
+    ].join(','));
+    
+    if (composeArea) {
+      try {
+        // Focus the compose area
+        composeArea.focus();
+        
+        // Either replace selected text or insert at cursor position
+        if (selection.rangeCount > 0) {
+          const range = selection.getRangeAt(0);
+          range.deleteContents();
+          range.insertNode(document.createTextNode(correctedText));
+        } else {
+          // If no selection, insert at cursor position or append
+          const range = document.createRange();
+          range.selectNodeContents(composeArea);
+          range.collapse(false); // Move to end
+          range.insertNode(document.createTextNode(correctedText));
+        }
+        console.log("Text inserted in Outlook compose area");
+        return true;
+      } catch (error) {
+        console.error("Error inserting text in Outlook compose:", error);
+      }
+    }
+  }
+  
+  // Fall back to standard text replacement
+  if (selection.rangeCount > 0) {
+    try {
+      const range = selection.getRangeAt(0);
+      range.deleteContents();
+      range.insertNode(document.createTextNode(correctedText));
+      console.log("Text replaced successfully!");
+      return true;
+    } catch (error) {
+      console.error("Replacement error:", error);
+    }
+  }
+  
+  return false;
+}
+
+// Update the message listener to use the new replacement function
+chrome.runtime.onMessage.addListener((request) => {
+  if (request.action === "ping") {
+    return true;
+  }
+  
+  if (request.action === "startProcessing") {
+    const selection = window.getSelection();
+    let selectionRect = null;
+    
+    if (selection.rangeCount > 0) {
+      selectionRect = selection.getRangeAt(0).getBoundingClientRect();
+    }
+    
+    showLoadingIndicator(selectionRect);
+  }
+  else if (request.action === "replaceText") {
+    console.log("Received corrected text");
+    removeLoadingIndicator();
+    
+    if (!replaceTextInEditor(request.correctedText)) {
+      // Show error message if replacement failed
+      const errorMessage = document.createElement('div');
+      errorMessage.style.position = 'fixed';
+      errorMessage.style.top = '20px';
+      errorMessage.style.right = '20px';
+      errorMessage.style.backgroundColor = '#f8d7da';
+      errorMessage.style.color = '#721c24';
+      errorMessage.style.padding = '10px 15px';
+      errorMessage.style.borderRadius = '4px';
+      errorMessage.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
+      errorMessage.style.zIndex = '9999';
+      errorMessage.style.maxWidth = '300px';
+      errorMessage.style.fontSize = '14px';
+      
+      errorMessage.textContent = "Could not replace text. Please try selecting text again.";
+      
+      document.body.appendChild(errorMessage);
+      
+      setTimeout(() => {
+        if (errorMessage.parentNode) {
+          errorMessage.parentNode.removeChild(errorMessage);
+        }
+      }, 5000);
+    }
+  } else if (request.action === "showError") {
+    // Remove loading indicator
+    removeLoadingIndicator();
+    
+    // Create and show error message
+    const errorDiv = document.createElement('div');
+    errorDiv.style.position = 'fixed';
+    errorDiv.style.top = '20px';
+    errorDiv.style.right = '20px';
+    errorDiv.style.backgroundColor = '#f8d7da';
+    errorDiv.style.color = '#721c24';
+    errorDiv.style.padding = '10px 15px';
+    errorDiv.style.borderRadius = '4px';
+    errorDiv.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
+    errorDiv.style.zIndex = '9999';
+    errorDiv.style.maxWidth = '300px';
+    errorDiv.style.fontSize = '14px';
+    
+    errorDiv.textContent = request.message;
+    
+    document.body.appendChild(errorDiv);
+    
+    // Remove the error message after 5 seconds
+    setTimeout(() => {
+      if (errorDiv.parentNode) {
+        errorDiv.parentNode.removeChild(errorDiv);
+      }
+    }, 5000);
+  }
+});
+
+// Initialize both Gmail and Outlook integrations
 setupGmailIntegration();
+setupOutlookIntegration();
 
 // This ensures the content script is loaded even in Gmail's dynamic environment
 if (document.readyState === 'loading') {

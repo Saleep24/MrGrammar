@@ -4,7 +4,12 @@
     "version": "1.0",
     "description": "Fix grammar and polish text with OpenAI directly in your browser.",
     "permissions": ["contextMenus", "activeTab", "scripting", "storage", "tabs"],
-    "host_permissions": ["https://api.openai.com/*", "https://mail.google.com/*"],
+    "host_permissions": [
+        "https://api.openai.com/*",
+        "https://mail.google.com/*",
+        "https://outlook.office.com/*",
+        "https://outlook.live.com/*"
+    ],
     "background": {
       "service_worker": "background.js",
       "type": "module"
@@ -17,7 +22,12 @@
     },
     "content_scripts": [
       {
-        "matches": ["<all_urls>", "https://mail.google.com/*"],
+        "matches": [
+          "<all_urls>",
+          "https://mail.google.com/*",
+          "https://outlook.office.com/*",
+          "https://outlook.live.com/*"
+        ],
         "js": ["content-script.js"],
         "all_frames": true,
         "exclude_matches": ["https://docs.google.com/*"]
