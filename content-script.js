@@ -276,6 +276,53 @@ function setupOutlookIntegration() {
   }
 }
 
+// Slack-specific integration
+function setupSlackIntegration() {
+  if (window.location.hostname === 'app.slack.com') {
+    console.log("Slack detected, setting up integration");
+    
+    // Create MutationObserver to detect when message input areas appear
+    const observer = new MutationObserver(mutations => {
+      // Look for the message composer in Slack
+      const messageComposers = document.querySelectorAll([
+        'div[data-qa="message_input"]', // Main message input
+        'div[data-qa="message_input_reply"]', // Thread reply input
+        'div[data-qa="message_edit_input"]' // Edit message input
+      ].join(','));
+      
+      if (messageComposers.length > 0) {
+        messageComposers.forEach(composer => {
+          // Ensure we haven't already processed this composer
+          if (!composer.dataset.grammarFixerInitialized) {
+            composer.dataset.grammarFixerInitialized = 'true';
+            console.log("Slack message composer found and initialized");
+            
+            // Add focus event listener if needed
+            composer.addEventListener('focus', () => {
+              console.log("Slack message composer focused");
+            });
+          }
+        });
+      }
+    });
+    
+    // Start observing
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+    
+    // Handle ping immediately with proper response
+    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+      if (request.action === "ping") {
+        console.log("Ping received in Slack");
+        sendResponse({status: "ok"});
+        return true; // Important for async response
+      }
+    });
+  }
+}
+
 // Update the text replacement logic to handle Outlook
 function replaceTextInEditor(correctedText) {
   const selection = window.getSelection();
@@ -283,6 +330,9 @@ function replaceTextInEditor(correctedText) {
   // Check if we're in Outlook
   const isOutlook = window.location.hostname.includes('outlook.office.com') || 
                    window.location.hostname.includes('outlook.live.com');
+  
+  // Check if we're in Slack
+  const isSlack = window.location.hostname === 'app.slack.com';
   
   if (isOutlook) {
     // Try to find the Outlook compose area
@@ -313,6 +363,59 @@ function replaceTextInEditor(correctedText) {
         return true;
       } catch (error) {
         console.error("Error inserting text in Outlook compose:", error);
+      }
+    }
+  }
+  
+  // Handle Slack-specific text replacement
+  if (isSlack) {
+    // Try to find the Slack message composer
+    const messageComposer = document.querySelector([
+      'div[data-qa="message_input"]', // Main message input
+      'div[data-qa="message_input_reply"]', // Thread reply input
+      'div[data-qa="message_edit_input"]' // Edit message input
+    ].join(','));
+    
+    if (messageComposer) {
+      try {
+        // Focus the message composer
+        messageComposer.focus();
+        
+        // Either replace selected text or insert at cursor position
+        if (selection.rangeCount > 0) {
+          const range = selection.getRangeAt(0);
+          range.deleteContents();
+          range.insertNode(document.createTextNode(correctedText));
+        } else {
+          // If no selection, try to find the rich text area within the composer
+          const richTextArea = messageComposer.querySelector('[data-slate-editor="true"]');
+          if (richTextArea) {
+            // Focus the rich text area
+            richTextArea.focus();
+            
+            if (selection.rangeCount > 0) {
+              const range = selection.getRangeAt(0);
+              range.deleteContents();
+              range.insertNode(document.createTextNode(correctedText));
+            } else {
+              // If still no selection, insert at end
+              const range = document.createRange();
+              range.selectNodeContents(richTextArea);
+              range.collapse(false); // Move to end
+              range.insertNode(document.createTextNode(correctedText));
+            }
+          } else {
+            // Fallback: insert at cursor position or append to message composer
+            const range = document.createRange();
+            range.selectNodeContents(messageComposer);
+            range.collapse(false); // Move to end
+            range.insertNode(document.createTextNode(correctedText));
+          }
+        }
+        console.log("Text inserted in Slack message composer");
+        return true;
+      } catch (error) {
+        console.error("Error inserting text in Slack message composer:", error);
       }
     }
   }
@@ -409,9 +512,10 @@ chrome.runtime.onMessage.addListener((request) => {
   }
 });
 
-// Initialize both Gmail and Outlook integrations
+// Initialize Gmail, Outlook, and Slack integrations
 setupGmailIntegration();
 setupOutlookIntegration();
+setupSlackIntegration();
 
 // This ensures the content script is loaded even in Gmail's dynamic environment
 if (document.readyState === 'loading') {

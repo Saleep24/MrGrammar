@@ -53,9 +53,14 @@ chrome.runtime.onInstalled.addListener(() => {
       // Get tab info
       const tabs = await chrome.tabs.query({active: true, currentWindow: true});
       const isGmail = tabs.length > 0 && isGmailTab(tabs[0]);
+      const isSlack = tabs.length > 0 && isSlackTab(tabs[0]);
       
       if (isGmail) {
         console.log("Processing Gmail content");
+      }
+      
+      if (isSlack) {
+        console.log("Processing Slack content");
       }
       
       // Special handling for Gmail
@@ -67,6 +72,20 @@ chrome.runtime.onInstalled.addListener(() => {
             files: ['content-script.js']
           });
           console.log("Content script injected into Gmail");
+        } catch (e) {
+          console.log("Content script already present or failed to inject", e);
+        }
+      }
+      
+      // Special handling for Slack
+      if (isSlack) {
+        // Try to inject content script if needed
+        try {
+          await chrome.scripting.executeScript({
+            target: {tabId: tabId},
+            files: ['content-script.js']
+          });
+          console.log("Content script injected into Slack");
         } catch (e) {
           console.log("Content script already present or failed to inject", e);
         }
@@ -103,6 +122,12 @@ chrome.runtime.onInstalled.addListener(() => {
               // For Gmail, we might need to retry or use a different approach
               if (isGmail) {
                 console.log("Attempting alternative text insertion for Gmail");
+                // If needed, implement alternative approach here
+              }
+              
+              // For Slack, we might need to retry or use a different approach
+              if (isSlack) {
+                console.log("Attempting alternative text insertion for Slack");
                 // If needed, implement alternative approach here
               }
             }
@@ -213,4 +238,8 @@ chrome.runtime.onInstalled.addListener(() => {
 
   function isGmailTab(tab) {
     return tab && tab.url && tab.url.includes('mail.google.com');
+  }
+  
+  function isSlackTab(tab) {
+    return tab && tab.url && tab.url.includes('app.slack.com');
   }
