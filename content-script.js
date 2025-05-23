@@ -245,19 +245,18 @@ function setupSlackIntegration() {
     
     const observer = new MutationObserver(mutations => {
       const messageComposers = document.querySelectorAll([
-        'div[data-qa="message_input"]', // Main message input
-        'div[data-qa="message_input_reply"]', // Thread reply input
-        'div[data-qa="message_edit_input"]' // Edit message input
+        'div[data-qa="message_input"]', 
+        'div[data-qa="message_input_reply"]', 
+        'div[data-qa="message_edit_input"]' 
       ].join(','));
       
       if (messageComposers.length > 0) {
         messageComposers.forEach(composer => {
-          // Ensure we haven't already processed this composer
+
           if (!composer.dataset.grammarFixerInitialized) {
             composer.dataset.grammarFixerInitialized = 'true';
             console.log("Slack message composer found and initialized");
-            
-            // Add focus event listener if needed
+
             composer.addEventListener('focus', () => {
               console.log("Slack message composer focused");
             });
@@ -266,36 +265,32 @@ function setupSlackIntegration() {
       }
     });
     
-    // Start observing
+
     observer.observe(document.body, {
       childList: true,
       subtree: true
     });
     
-    // Handle ping immediately with proper response
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       if (request.action === "ping") {
         console.log("Ping received in Slack");
         sendResponse({status: "ok"});
-        return true; // Important for async response
+        return true; 
       }
     });
   }
 }
 
-// Update the text replacement logic to handle Outlook
+
 function replaceTextInEditor(correctedText) {
   const selection = window.getSelection();
   
-  // Check if we're in Outlook
   const isOutlook = window.location.hostname.includes('outlook.office.com') || 
                    window.location.hostname.includes('outlook.live.com');
   
-  // Check if we're in Slack
   const isSlack = window.location.hostname === 'app.slack.com';
   
   if (isOutlook) {
-    // Try to find the Outlook compose area
     const composeArea = document.querySelector([
       'div[role="textbox"][aria-label="Message body"]',
       'div[role="textbox"][aria-label="Reply body"]',
@@ -304,10 +299,8 @@ function replaceTextInEditor(correctedText) {
     
     if (composeArea) {
       try {
-        // Focus the compose area
         composeArea.focus();
         
-        // Either replace selected text or insert at cursor position
         if (selection.rangeCount > 0) {
           const range = selection.getRangeAt(0);
           range.deleteContents();
