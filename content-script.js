@@ -332,16 +332,13 @@ function replaceTextInEditor(correctedText) {
       try {
         messageComposer.focus();
         
-        // Either replace selected text or insert at cursor position
         if (selection.rangeCount > 0) {
           const range = selection.getRangeAt(0);
           range.deleteContents();
           range.insertNode(document.createTextNode(correctedText));
         } else {
-          // If no selection, try to find the rich text area within the composer
           const richTextArea = messageComposer.querySelector('[data-slate-editor="true"]');
           if (richTextArea) {
-            // Focus the rich text area
             richTextArea.focus();
             
             if (selection.rangeCount > 0) {
@@ -349,17 +346,15 @@ function replaceTextInEditor(correctedText) {
               range.deleteContents();
               range.insertNode(document.createTextNode(correctedText));
             } else {
-              // If still no selection, insert at end
               const range = document.createRange();
               range.selectNodeContents(richTextArea);
-              range.collapse(false); // Move to end
+              range.collapse(false);
               range.insertNode(document.createTextNode(correctedText));
             }
           } else {
-            // Fallback: insert at cursor position or append to message composer
             const range = document.createRange();
             range.selectNodeContents(messageComposer);
-            range.collapse(false); // Move to end
+            range.collapse(false); 
             range.insertNode(document.createTextNode(correctedText));
           }
         }
@@ -371,7 +366,6 @@ function replaceTextInEditor(correctedText) {
     }
   }
   
-  // Fall back to standard text replacement
   if (selection.rangeCount > 0) {
     try {
       const range = selection.getRangeAt(0);
@@ -387,7 +381,6 @@ function replaceTextInEditor(correctedText) {
   return false;
 }
 
-// Update the message listener to use the new replacement function
 chrome.runtime.onMessage.addListener((request) => {
   if (request.action === "ping") {
     return true;
@@ -408,7 +401,6 @@ chrome.runtime.onMessage.addListener((request) => {
     removeLoadingIndicator();
     
     if (!replaceTextInEditor(request.correctedText)) {
-      // Show error message if replacement failed
       const errorMessage = document.createElement('div');
       errorMessage.style.position = 'fixed';
       errorMessage.style.top = '20px';
@@ -433,10 +425,8 @@ chrome.runtime.onMessage.addListener((request) => {
       }, 5000);
     }
   } else if (request.action === "showError") {
-    // Remove loading indicator
     removeLoadingIndicator();
     
-    // Create and show error message
     const errorDiv = document.createElement('div');
     errorDiv.style.position = 'fixed';
     errorDiv.style.top = '20px';
@@ -454,7 +444,6 @@ chrome.runtime.onMessage.addListener((request) => {
     
     document.body.appendChild(errorDiv);
     
-    // Remove the error message after 5 seconds
     setTimeout(() => {
       if (errorDiv.parentNode) {
         errorDiv.parentNode.removeChild(errorDiv);
@@ -463,12 +452,10 @@ chrome.runtime.onMessage.addListener((request) => {
   }
 });
 
-// Initialize Gmail, Outlook, and Slack integrations
 setupGmailIntegration();
 setupOutlookIntegration();
 setupSlackIntegration();
 
-// This ensures the content script is loaded even in Gmail's dynamic environment
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
     console.log("DOMContentLoaded - Grammar Fixer initializing");
