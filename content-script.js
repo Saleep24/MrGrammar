@@ -306,10 +306,10 @@ function replaceTextInEditor(correctedText) {
           range.deleteContents();
           range.insertNode(document.createTextNode(correctedText));
         } else {
-          // If no selection, insert at cursor position or append
+
           const range = document.createRange();
           range.selectNodeContents(composeArea);
-          range.collapse(false); // Move to end
+          range.collapse(false); 
           range.insertNode(document.createTextNode(correctedText));
         }
         console.log("Text inserted in Outlook compose area");
@@ -320,18 +320,16 @@ function replaceTextInEditor(correctedText) {
     }
   }
   
-  // Handle Slack-specific text replacement
+
   if (isSlack) {
-    // Try to find the Slack message composer
     const messageComposer = document.querySelector([
-      'div[data-qa="message_input"]', // Main message input
-      'div[data-qa="message_input_reply"]', // Thread reply input
-      'div[data-qa="message_edit_input"]' // Edit message input
+      'div[data-qa="message_input"]', 
+      'div[data-qa="message_input_reply"]', 
+      'div[data-qa="message_edit_input"]'
     ].join(','));
     
     if (messageComposer) {
       try {
-        // Focus the message composer
         messageComposer.focus();
         
         // Either replace selected text or insert at cursor position
