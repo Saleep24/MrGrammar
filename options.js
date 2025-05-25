@@ -1,4 +1,3 @@
-// Load saved settings when the options page is opened
 document.addEventListener('DOMContentLoaded', () => {
   chrome.storage.sync.get(['openaiApiKey', 'openaiModel'], (result) => {
     if (result.openaiApiKey) {
@@ -10,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-// Save settings when the save button is clicked
+
 document.getElementById('save').addEventListener('click', () => {
   const apiKey = document.getElementById('api-key').value.trim();
   const model = document.getElementById('model').value;
@@ -29,7 +28,7 @@ document.getElementById('save').addEventListener('click', () => {
   });
 });
 
-// Helper function to show status messages
+
 function showStatus(message, type) {
   const statusDiv = document.getElementById('status');
   statusDiv.textContent = message;
