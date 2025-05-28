@@ -1,4 +1,3 @@
-// Create the right-click menu on extension install
 chrome.runtime.onInstalled.addListener(() => {
     chrome.contextMenus.create({
       id: "fixGrammar",
@@ -15,7 +14,7 @@ chrome.runtime.onInstalled.addListener(() => {
     }
   });
 
-  // Listen for keyboard shortcuts
+ 
   chrome.commands.onCommand.addListener(async (command) => {
     if (command === "fix-grammar") {
 
@@ -45,12 +44,11 @@ chrome.runtime.onInstalled.addListener(() => {
     }
   });
   
-  // Process selected text and send correction back to the content script
   async function processSelectedText(text, tabId) {
     console.log("Text selected:", text);
 
     try {
-      // Get tab info
+  
       const tabs = await chrome.tabs.query({active: true, currentWindow: true});
       const isGmail = tabs.length > 0 && isGmailTab(tabs[0]);
       const isSlack = tabs.length > 0 && isSlackTab(tabs[0]);
@@ -63,9 +61,8 @@ chrome.runtime.onInstalled.addListener(() => {
         console.log("Processing Slack content");
       }
       
-      // Special handling for Gmail
+ 
       if (isGmail) {
-        // Try to inject content script if needed
         try {
           await chrome.scripting.executeScript({
             target: {tabId: tabId},
@@ -77,9 +74,7 @@ chrome.runtime.onInstalled.addListener(() => {
         }
       }
       
-      // Special handling for Slack
       if (isSlack) {
-        // Try to inject content script if needed
         try {
           await chrome.scripting.executeScript({
             target: {tabId: tabId},
@@ -91,13 +86,11 @@ chrome.runtime.onInstalled.addListener(() => {
         }
       }
 
-      // Show loading indicator - with improved error handling
       try {
         chrome.tabs.sendMessage(tabId, {
           action: "startProcessing"
         }, function(response) {
           if (chrome.runtime.lastError) {
-            // This is expected in some cases, don't treat as error
             console.log("Note: Content script may not be ready yet, continuing anyway");
           }
         });
@@ -109,7 +102,6 @@ chrome.runtime.onInstalled.addListener(() => {
         const correctedText = await fixGrammarWithOpenAI(text);
         console.log("Corrected text:", correctedText); 
     
-        // Send corrected text to the webpage - with improved error handling
         try {
           chrome.tabs.sendMessage(tabId, {
             action: "replaceText",
@@ -119,16 +111,12 @@ chrome.runtime.onInstalled.addListener(() => {
             if (chrome.runtime.lastError) {
               console.log("Note: Message delivery to content script not confirmed, this is normal for some websites");
               
-              // For Gmail, we might need to retry or use a different approach
               if (isGmail) {
                 console.log("Attempting alternative text insertion for Gmail");
-                // If needed, implement alternative approach here
               }
               
-              // For Slack, we might need to retry or use a different approach
               if (isSlack) {
                 console.log("Attempting alternative text insertion for Slack");
-                // If needed, implement alternative approach here
               }
             }
           });
@@ -138,7 +126,6 @@ chrome.runtime.onInstalled.addListener(() => {
       } catch (error) {
         console.error("Error in background.js:", error);
         
-        // Alert the user if there's an API key issue
         try {
           if (error.message.includes("API key")) {
             chrome.tabs.sendMessage(tabId, {
@@ -160,7 +147,6 @@ chrome.runtime.onInstalled.addListener(() => {
     }
   }
   
-  // OpenAI API call
   async function fixGrammarWithOpenAI(text) {
 
     const { openaiApiKey, openaiModel } = await chrome.storage.sync.get(['openaiApiKey', 'openaiModel']);
@@ -169,7 +155,7 @@ chrome.runtime.onInstalled.addListener(() => {
       throw new Error("API key not found. Please set up your OpenAI API key in the extension options.");
     }
     
-    // Default to GPT-4o Mini if no model is selected
+ 
     const model = openaiModel || "gpt-4o-mini";
     
     
@@ -193,7 +179,6 @@ chrome.runtime.onInstalled.addListener(() => {
       temperature = 0.2;
     }
     
-    // Ensure maxTokens is definitely an integer
     maxTokens = Math.max(100, Math.floor(maxTokens));
     
     try {
