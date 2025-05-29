@@ -174,7 +174,7 @@ chrome.runtime.onInstalled.addListener(() => {
     } else if (model === "gpt-4o") {
       maxTokens = Math.floor(Math.min(4000, inputTokenEstimate * 1.5));
       temperature = 0.2;
-    } else { // gpt-4
+    } else { 
       maxTokens = Math.floor(Math.min(4000, inputTokenEstimate * 1.5));
       temperature = 0.2;
     }
