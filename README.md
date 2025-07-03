@@ -1,4 +1,4 @@
-# GrammarFix Browser Extension
+# MrGrammar Browser Extension
 
 A browser extension that fixes grammar and polishes text directly in your browser using OpenAI's API. Simply highlight text, right-click, and let AI handle the rest!
 
