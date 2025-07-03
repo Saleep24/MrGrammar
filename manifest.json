@@ -1,6 +1,6 @@
 {
     "manifest_version": 3,
-    "name": "Grammar Fixer",
+    "name": "MrGrammar",
     "version": "1.0",
     "description": "Fix grammar and polish text with OpenAI directly in your browser.",
     "permissions": ["contextMenus", "activeTab", "scripting", "storage", "tabs"],
