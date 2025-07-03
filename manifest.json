@@ -42,7 +42,8 @@
     ],
     "options_page": "options.html",
     "icons": {
-      "48": "icons/icon-48.png"
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
     },
     "commands": {
       "fix-grammar": {
