@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "MrGrammar",
-    "version": "1.0",
+    "version": "1.1",
     "description": "Fix grammar and polish text directly in your browser. Compatible with Gmail, LinkedIn, Slack, and many more.",
     "permissions": ["contextMenus", "activeTab", "scripting", "storage", "tabs"],
     "host_permissions": [
