@@ -9,7 +9,8 @@
         "https://mail.google.com/*",
         "https://outlook.office.com/*",
         "https://outlook.live.com/*",
-        "https://app.slack.com/*"
+        "https://app.slack.com/*",
+        "https://www.linkedin.com/*"
     ],
     "background": {
       "service_worker": "background.js",
@@ -28,7 +29,8 @@
           "https://mail.google.com/*",
           "https://outlook.office.com/*",
           "https://outlook.live.com/*",
-          "https://app.slack.com/*"
+          "https://app.slack.com/*",
+          "https://www.linkedin.com/*"
         ],
         "js": ["content-script.js"],
         "all_frames": true,

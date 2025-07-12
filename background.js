@@ -52,6 +52,7 @@ chrome.runtime.onInstalled.addListener(() => {
       const tabs = await chrome.tabs.query({active: true, currentWindow: true});
       const isGmail = tabs.length > 0 && isGmailTab(tabs[0]);
       const isSlack = tabs.length > 0 && isSlackTab(tabs[0]);
+      const isLinkedIn = tabs.length > 0 && isLinkedInTab(tabs[0]);
       
       if (isGmail) {
         console.log("Processing Gmail content");
@@ -59,6 +60,10 @@ chrome.runtime.onInstalled.addListener(() => {
       
       if (isSlack) {
         console.log("Processing Slack content");
+      }
+      
+      if (isLinkedIn) {
+        console.log("Processing LinkedIn content");
       }
       
  
@@ -81,6 +86,18 @@ chrome.runtime.onInstalled.addListener(() => {
             files: ['content-script.js']
           });
           console.log("Content script injected into Slack");
+        } catch (e) {
+          console.log("Content script already present or failed to inject", e);
+        }
+      }
+      
+      if (isLinkedIn) {
+        try {
+          await chrome.scripting.executeScript({
+            target: {tabId: tabId},
+            files: ['content-script.js']
+          });
+          console.log("Content script injected into LinkedIn");
         } catch (e) {
           console.log("Content script already present or failed to inject", e);
         }
@@ -117,6 +134,10 @@ chrome.runtime.onInstalled.addListener(() => {
               
               if (isSlack) {
                 console.log("Attempting alternative text insertion for Slack");
+              }
+              
+              if (isLinkedIn) {
+                console.log("Attempting alternative text insertion for LinkedIn");
               }
             }
           });
@@ -227,4 +248,8 @@ chrome.runtime.onInstalled.addListener(() => {
   
   function isSlackTab(tab) {
     return tab && tab.url && tab.url.includes('app.slack.com');
+  }
+  
+  function isLinkedInTab(tab) {
+    return tab && tab.url && tab.url.includes('www.linkedin.com');
   }

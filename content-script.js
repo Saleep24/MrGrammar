@@ -281,6 +281,392 @@ function setupSlackIntegration() {
   }
 }
 
+function setupLinkedInIntegration() {
+  if (window.location.hostname === 'www.linkedin.com') {
+    console.log("LinkedIn detected, setting up integration");
+    
+    const observer = new MutationObserver(mutations => {
+      // LinkedIn messaging uses various selectors for different contexts
+      const messageComposers = document.querySelectorAll([
+        'div[data-placeholder*="message"]',
+        'div[data-placeholder*="Message"]',
+        'div[role="textbox"]',
+        'div[contenteditable="true"]',
+        'div[data-test-id="compose-message-input"]',
+        'div[data-test-id="message-composer-input"]'
+      ].join(','));
+      
+      if (messageComposers.length > 0) {
+        messageComposers.forEach(composer => {
+          if (!composer.dataset.grammarFixerInitialized) {
+            composer.dataset.grammarFixerInitialized = 'true';
+            console.log("LinkedIn message composer found and initialized:", composer);
+            
+            composer.addEventListener('focus', () => {
+              console.log("LinkedIn message composer focused");
+            });
+          }
+        });
+      }
+    });
+    
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+    
+    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+      if (request.action === "ping") {
+        console.log("Ping received in LinkedIn");
+        sendResponse({status: "ok"});
+        return true; 
+      }
+    });
+  }
+}
+
+function replaceTextInLinkedIn(correctedText) {
+  console.log("Attempting LinkedIn-specific text replacement");
+  
+  const selection = window.getSelection();
+  
+  // Find LinkedIn message composer elements with more comprehensive selectors
+  const messageComposers = document.querySelectorAll([
+    'div[data-placeholder*="message"]',
+    'div[data-placeholder*="Message"]',
+    'div[role="textbox"]',
+    'div[contenteditable="true"]',
+    'div[data-test-id="compose-message-input"]',
+    'div[data-test-id="message-composer-input"]',
+    'div[data-test-id="messaging-compose-input"]',
+    'div[data-test-id="compose-input"]',
+    'div[aria-label*="message"]',
+    'div[aria-label*="Message"]',
+    'div[data-control-name="compose_message"]',
+    'div[data-control-name="messaging_compose"]'
+  ].join(','));
+  
+  if (messageComposers.length === 0) {
+    console.log("No LinkedIn message composer found");
+    return false;
+  }
+  
+  // Find the active/focused composer
+  let activeComposer = null;
+  for (const composer of messageComposers) {
+    if (composer === document.activeElement || composer.contains(document.activeElement)) {
+      activeComposer = composer;
+      break;
+    }
+  }
+  
+  // If no active composer, use the first one
+  if (!activeComposer && messageComposers.length > 0) {
+    activeComposer = messageComposers[0];
+  }
+  
+  if (!activeComposer) {
+    console.log("No active LinkedIn composer found");
+    return false;
+  }
+  
+  console.log("Found LinkedIn composer:", activeComposer);
+  
+  // Try multiple methods to ensure text replacement works
+  return tryLinkedInReplacementMethods(activeComposer, correctedText, selection);
+}
+
+function tryLinkedInReplacementMethods(composer, correctedText, selection) {
+  // Method 1: Direct DOM manipulation with comprehensive event triggering
+  if (tryMethod1_DirectManipulation(composer, correctedText, selection)) {
+    return true;
+  }
+  
+  // Method 2: Programmatic text insertion with focus management
+  if (tryMethod2_ProgrammaticInsertion(composer, correctedText)) {
+    return true;
+  }
+  
+  // Method 3: Clipboard-based replacement
+  if (tryMethod3_ClipboardReplacement(composer, correctedText)) {
+    return true;
+  }
+  
+  // Method 4: Simulate user typing
+  if (tryMethod4_SimulateTyping(composer, correctedText)) {
+    return true;
+  }
+  
+  console.log("All LinkedIn replacement methods failed");
+  return false;
+}
+
+function tryMethod1_DirectManipulation(composer, correctedText, selection) {
+  try {
+    console.log("Trying Method 1: Direct DOM manipulation");
+    
+    // Method 1a: Replace selected text
+    if (selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      if (composer.contains(range.commonAncestorContainer)) {
+        console.log("Replacing selected text in LinkedIn composer");
+        range.deleteContents();
+        range.insertNode(document.createTextNode(correctedText));
+        triggerLinkedInEvents(composer, correctedText);
+        return true;
+      }
+    }
+    
+    // Method 1b: Replace all content
+    composer.focus();
+    composer.innerHTML = '';
+    const textNode = document.createTextNode(correctedText);
+    composer.appendChild(textNode);
+    
+    // Set cursor position
+    const range = document.createRange();
+    range.selectNodeContents(composer);
+    range.collapse(false);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    
+    triggerLinkedInEvents(composer, correctedText);
+    return true;
+    
+  } catch (error) {
+    console.error("Method 1 failed:", error);
+    return false;
+  }
+}
+
+function tryMethod2_ProgrammaticInsertion(composer, correctedText) {
+  try {
+    console.log("Trying Method 2: Programmatic insertion");
+    
+    composer.focus();
+    
+    // Clear existing content
+    composer.textContent = '';
+    
+    // Insert text character by character to simulate typing
+    let currentText = '';
+    for (let i = 0; i < correctedText.length; i++) {
+      currentText += correctedText[i];
+      composer.textContent = currentText;
+      
+      // Trigger input event for each character
+      const inputEvent = new Event('input', {
+        bubbles: true,
+        cancelable: true,
+        composed: true
+      });
+      composer.dispatchEvent(inputEvent);
+    }
+    
+    // Set cursor at the end
+    const range = document.createRange();
+    range.selectNodeContents(composer);
+    range.collapse(false);
+    const selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+    
+    triggerLinkedInEvents(composer, correctedText);
+    return true;
+    
+  } catch (error) {
+    console.error("Method 2 failed:", error);
+    return false;
+  }
+}
+
+function tryMethod3_ClipboardReplacement(composer, correctedText) {
+  try {
+    console.log("Trying Method 3: Clipboard replacement");
+    
+    if (!navigator.clipboard) {
+      console.log("Clipboard API not available");
+      return false;
+    }
+    
+    return new Promise((resolve) => {
+      navigator.clipboard.writeText(correctedText).then(() => {
+        composer.focus();
+        
+        // Clear existing content first
+        composer.textContent = '';
+        
+        // Simulate Ctrl+A to select all
+        const selectAllEvent = new KeyboardEvent('keydown', {
+          key: 'a',
+          code: 'KeyA',
+          ctrlKey: true,
+          bubbles: true,
+          cancelable: true
+        });
+        composer.dispatchEvent(selectAllEvent);
+        
+        // Simulate Ctrl+V to paste
+        setTimeout(() => {
+          const pasteEvent = new KeyboardEvent('keydown', {
+            key: 'v',
+            code: 'KeyV',
+            ctrlKey: true,
+            bubbles: true,
+            cancelable: true
+          });
+          composer.dispatchEvent(pasteEvent);
+          
+          triggerLinkedInEvents(composer, correctedText);
+          resolve(true);
+        }, 50);
+      }).catch((error) => {
+        console.error("Clipboard write failed:", error);
+        resolve(false);
+      });
+    });
+    
+  } catch (error) {
+    console.error("Method 3 failed:", error);
+    return false;
+  }
+}
+
+function tryMethod4_SimulateTyping(composer, correctedText) {
+  try {
+    console.log("Trying Method 4: Simulate typing");
+    
+    composer.focus();
+    composer.textContent = '';
+    
+    // Simulate typing each character
+    let currentText = '';
+    for (let i = 0; i < correctedText.length; i++) {
+      const char = correctedText[i];
+      currentText += char;
+      
+      // Update text content
+      composer.textContent = currentText;
+      
+      // Create and dispatch keydown event
+      const keydownEvent = new KeyboardEvent('keydown', {
+        key: char,
+        code: `Key${char.toUpperCase()}`,
+        bubbles: true,
+        cancelable: true
+      });
+      composer.dispatchEvent(keydownEvent);
+      
+      // Create and dispatch keypress event
+      const keypressEvent = new KeyboardEvent('keypress', {
+        key: char,
+        code: `Key${char.toUpperCase()}`,
+        bubbles: true,
+        cancelable: true
+      });
+      composer.dispatchEvent(keypressEvent);
+      
+      // Create and dispatch input event
+      const inputEvent = new Event('input', {
+        bubbles: true,
+        cancelable: true,
+        composed: true
+      });
+      composer.dispatchEvent(inputEvent);
+      
+      // Create and dispatch keyup event
+      const keyupEvent = new KeyboardEvent('keyup', {
+        key: char,
+        code: `Key${char.toUpperCase()}`,
+        bubbles: true,
+        cancelable: true
+      });
+      composer.dispatchEvent(keyupEvent);
+    }
+    
+    // Set cursor position
+    const range = document.createRange();
+    range.selectNodeContents(composer);
+    range.collapse(false);
+    const selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+    
+    triggerLinkedInEvents(composer, correctedText);
+    return true;
+    
+  } catch (error) {
+    console.error("Method 4 failed:", error);
+    return false;
+  }
+}
+
+function triggerLinkedInEvents(element, text) {
+  console.log("Triggering comprehensive LinkedIn events for state synchronization");
+  
+  // Create and dispatch input event
+  const inputEvent = new Event('input', {
+    bubbles: true,
+    cancelable: true,
+    composed: true
+  });
+  element.dispatchEvent(inputEvent);
+  
+  // Create and dispatch change event
+  const changeEvent = new Event('change', {
+    bubbles: true,
+    cancelable: true
+  });
+  element.dispatchEvent(changeEvent);
+  
+  // Create and dispatch composition events (for IME support)
+  const compositionStartEvent = new CompositionEvent('compositionstart', {
+    bubbles: true,
+    cancelable: true,
+    data: text
+  });
+  element.dispatchEvent(compositionStartEvent);
+  
+  const compositionEndEvent = new CompositionEvent('compositionend', {
+    bubbles: true,
+    cancelable: true,
+    data: text
+  });
+  element.dispatchEvent(compositionEndEvent);
+  
+  // Trigger keyup event to simulate user typing
+  const keyupEvent = new KeyboardEvent('keyup', {
+    key: 'a',
+    code: 'KeyA',
+    bubbles: true,
+    cancelable: true
+  });
+  element.dispatchEvent(keyupEvent);
+  
+  // Trigger blur and focus events to ensure state update
+  element.blur();
+  setTimeout(() => {
+    element.focus();
+    
+    // Additional events after focus
+    const focusEvent = new Event('focus', {
+      bubbles: true,
+      cancelable: true
+    });
+    element.dispatchEvent(focusEvent);
+    
+    // Trigger one more input event after focus
+    const finalInputEvent = new Event('input', {
+      bubbles: true,
+      cancelable: true,
+      composed: true
+    });
+    element.dispatchEvent(finalInputEvent);
+    
+  }, 10);
+  
+  console.log("LinkedIn events triggered successfully");
+}
 
 function replaceTextInEditor(correctedText) {
   const selection = window.getSelection();
@@ -289,6 +675,13 @@ function replaceTextInEditor(correctedText) {
                    window.location.hostname.includes('outlook.live.com');
   
   const isSlack = window.location.hostname === 'app.slack.com';
+  
+  const isLinkedIn = window.location.hostname === 'www.linkedin.com';
+  
+  // LinkedIn-specific handling
+  if (isLinkedIn) {
+    return replaceTextInLinkedIn(correctedText);
+  }
   
   if (isOutlook) {
     const composeArea = document.querySelector([
@@ -455,6 +848,7 @@ chrome.runtime.onMessage.addListener((request) => {
 setupGmailIntegration();
 setupOutlookIntegration();
 setupSlackIntegration();
+setupLinkedInIntegration();
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
@@ -463,3 +857,66 @@ if (document.readyState === 'loading') {
 }
 
 console.log("Grammar Fixer content script loaded successfully");
+
+// LinkedIn debugging utility
+function debugLinkedInIntegration() {
+  if (window.location.hostname !== 'www.linkedin.com') {
+    console.log("Not on LinkedIn, debugging not available");
+    return;
+  }
+  
+  console.log("=== LinkedIn Integration Debug ===");
+  
+  // Find all potential message composers
+  const selectors = [
+    'div[data-placeholder*="message"]',
+    'div[data-placeholder*="Message"]',
+    'div[role="textbox"]',
+    'div[contenteditable="true"]',
+    'div[data-test-id="compose-message-input"]',
+    'div[data-test-id="message-composer-input"]',
+    'div[data-test-id="messaging-compose-input"]',
+    'div[data-test-id="compose-input"]',
+    'div[aria-label*="message"]',
+    'div[aria-label*="Message"]',
+    'div[data-control-name="compose_message"]',
+    'div[data-control-name="messaging_compose"]'
+  ];
+  
+  console.log("Searching for LinkedIn message composers...");
+  
+  selectors.forEach(selector => {
+    const elements = document.querySelectorAll(selector);
+    if (elements.length > 0) {
+      console.log(`Found ${elements.length} elements with selector: ${selector}`);
+      elements.forEach((el, index) => {
+        console.log(`  Element ${index}:`, {
+          tagName: el.tagName,
+          className: el.className,
+          id: el.id,
+          attributes: Array.from(el.attributes).map(attr => `${attr.name}="${attr.value}"`).join(', '),
+          isContentEditable: el.contentEditable,
+          hasFocus: el === document.activeElement || el.contains(document.activeElement),
+          textContent: el.textContent.substring(0, 50) + (el.textContent.length > 50 ? '...' : '')
+        });
+      });
+    }
+  });
+  
+  // Check for active element
+  console.log("Active element:", document.activeElement);
+  
+  // Check for selection
+  const selection = window.getSelection();
+  console.log("Current selection:", {
+    rangeCount: selection.rangeCount,
+    toString: selection.toString(),
+    anchorNode: selection.anchorNode,
+    focusNode: selection.focusNode
+  });
+  
+  console.log("=== End LinkedIn Debug ===");
+}
+
+// Expose debug function globally for testing
+window.debugLinkedInGrammarFixer = debugLinkedInIntegration;
