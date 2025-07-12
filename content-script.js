@@ -286,7 +286,6 @@ function setupLinkedInIntegration() {
     console.log("LinkedIn detected, setting up integration");
     
     const observer = new MutationObserver(mutations => {
-      // LinkedIn messaging uses various selectors for different contexts
       const messageComposers = document.querySelectorAll([
         'div[data-placeholder*="message"]',
         'div[data-placeholder*="Message"]',
@@ -330,7 +329,6 @@ function replaceTextInLinkedIn(correctedText) {
   
   const selection = window.getSelection();
   
-  // Find LinkedIn message composer elements with more comprehensive selectors
   const messageComposers = document.querySelectorAll([
     'div[data-placeholder*="message"]',
     'div[data-placeholder*="Message"]',
@@ -351,7 +349,6 @@ function replaceTextInLinkedIn(correctedText) {
     return false;
   }
   
-  // Find the active/focused composer
   let activeComposer = null;
   for (const composer of messageComposers) {
     if (composer === document.activeElement || composer.contains(document.activeElement)) {
@@ -360,7 +357,6 @@ function replaceTextInLinkedIn(correctedText) {
     }
   }
   
-  // If no active composer, use the first one
   if (!activeComposer && messageComposers.length > 0) {
     activeComposer = messageComposers[0];
   }
@@ -372,27 +368,22 @@ function replaceTextInLinkedIn(correctedText) {
   
   console.log("Found LinkedIn composer:", activeComposer);
   
-  // Try multiple methods to ensure text replacement works
   return tryLinkedInReplacementMethods(activeComposer, correctedText, selection);
 }
 
 function tryLinkedInReplacementMethods(composer, correctedText, selection) {
-  // Method 1: Direct DOM manipulation with comprehensive event triggering
   if (tryMethod1_DirectManipulation(composer, correctedText, selection)) {
     return true;
   }
   
-  // Method 2: Programmatic text insertion with focus management
   if (tryMethod2_ProgrammaticInsertion(composer, correctedText)) {
     return true;
   }
   
-  // Method 3: Clipboard-based replacement
   if (tryMethod3_ClipboardReplacement(composer, correctedText)) {
     return true;
   }
   
-  // Method 4: Simulate user typing
   if (tryMethod4_SimulateTyping(composer, correctedText)) {
     return true;
   }
@@ -405,7 +396,6 @@ function tryMethod1_DirectManipulation(composer, correctedText, selection) {
   try {
     console.log("Trying Method 1: Direct DOM manipulation");
     
-    // Method 1a: Replace selected text
     if (selection.rangeCount > 0) {
       const range = selection.getRangeAt(0);
       if (composer.contains(range.commonAncestorContainer)) {
@@ -417,13 +407,11 @@ function tryMethod1_DirectManipulation(composer, correctedText, selection) {
       }
     }
     
-    // Method 1b: Replace all content
     composer.focus();
     composer.innerHTML = '';
     const textNode = document.createTextNode(correctedText);
     composer.appendChild(textNode);
     
-    // Set cursor position
     const range = document.createRange();
     range.selectNodeContents(composer);
     range.collapse(false);
@@ -445,16 +433,13 @@ function tryMethod2_ProgrammaticInsertion(composer, correctedText) {
     
     composer.focus();
     
-    // Clear existing content
     composer.textContent = '';
     
-    // Insert text character by character to simulate typing
     let currentText = '';
     for (let i = 0; i < correctedText.length; i++) {
       currentText += correctedText[i];
       composer.textContent = currentText;
       
-      // Trigger input event for each character
       const inputEvent = new Event('input', {
         bubbles: true,
         cancelable: true,
@@ -463,7 +448,6 @@ function tryMethod2_ProgrammaticInsertion(composer, correctedText) {
       composer.dispatchEvent(inputEvent);
     }
     
-    // Set cursor at the end
     const range = document.createRange();
     range.selectNodeContents(composer);
     range.collapse(false);
@@ -493,10 +477,8 @@ function tryMethod3_ClipboardReplacement(composer, correctedText) {
       navigator.clipboard.writeText(correctedText).then(() => {
         composer.focus();
         
-        // Clear existing content first
         composer.textContent = '';
         
-        // Simulate Ctrl+A to select all
         const selectAllEvent = new KeyboardEvent('keydown', {
           key: 'a',
           code: 'KeyA',
@@ -506,7 +488,6 @@ function tryMethod3_ClipboardReplacement(composer, correctedText) {
         });
         composer.dispatchEvent(selectAllEvent);
         
-        // Simulate Ctrl+V to paste
         setTimeout(() => {
           const pasteEvent = new KeyboardEvent('keydown', {
             key: 'v',
@@ -539,16 +520,13 @@ function tryMethod4_SimulateTyping(composer, correctedText) {
     composer.focus();
     composer.textContent = '';
     
-    // Simulate typing each character
     let currentText = '';
     for (let i = 0; i < correctedText.length; i++) {
       const char = correctedText[i];
       currentText += char;
       
-      // Update text content
       composer.textContent = currentText;
       
-      // Create and dispatch keydown event
       const keydownEvent = new KeyboardEvent('keydown', {
         key: char,
         code: `Key${char.toUpperCase()}`,
@@ -557,7 +535,6 @@ function tryMethod4_SimulateTyping(composer, correctedText) {
       });
       composer.dispatchEvent(keydownEvent);
       
-      // Create and dispatch keypress event
       const keypressEvent = new KeyboardEvent('keypress', {
         key: char,
         code: `Key${char.toUpperCase()}`,
@@ -566,7 +543,6 @@ function tryMethod4_SimulateTyping(composer, correctedText) {
       });
       composer.dispatchEvent(keypressEvent);
       
-      // Create and dispatch input event
       const inputEvent = new Event('input', {
         bubbles: true,
         cancelable: true,
@@ -574,7 +550,6 @@ function tryMethod4_SimulateTyping(composer, correctedText) {
       });
       composer.dispatchEvent(inputEvent);
       
-      // Create and dispatch keyup event
       const keyupEvent = new KeyboardEvent('keyup', {
         key: char,
         code: `Key${char.toUpperCase()}`,
@@ -584,7 +559,6 @@ function tryMethod4_SimulateTyping(composer, correctedText) {
       composer.dispatchEvent(keyupEvent);
     }
     
-    // Set cursor position
     const range = document.createRange();
     range.selectNodeContents(composer);
     range.collapse(false);
@@ -604,7 +578,6 @@ function tryMethod4_SimulateTyping(composer, correctedText) {
 function triggerLinkedInEvents(element, text) {
   console.log("Triggering comprehensive LinkedIn events for state synchronization");
   
-  // Create and dispatch input event
   const inputEvent = new Event('input', {
     bubbles: true,
     cancelable: true,
@@ -612,14 +585,12 @@ function triggerLinkedInEvents(element, text) {
   });
   element.dispatchEvent(inputEvent);
   
-  // Create and dispatch change event
   const changeEvent = new Event('change', {
     bubbles: true,
     cancelable: true
   });
   element.dispatchEvent(changeEvent);
   
-  // Create and dispatch composition events (for IME support)
   const compositionStartEvent = new CompositionEvent('compositionstart', {
     bubbles: true,
     cancelable: true,
@@ -634,7 +605,6 @@ function triggerLinkedInEvents(element, text) {
   });
   element.dispatchEvent(compositionEndEvent);
   
-  // Trigger keyup event to simulate user typing
   const keyupEvent = new KeyboardEvent('keyup', {
     key: 'a',
     code: 'KeyA',
@@ -643,19 +613,16 @@ function triggerLinkedInEvents(element, text) {
   });
   element.dispatchEvent(keyupEvent);
   
-  // Trigger blur and focus events to ensure state update
   element.blur();
   setTimeout(() => {
     element.focus();
     
-    // Additional events after focus
     const focusEvent = new Event('focus', {
       bubbles: true,
       cancelable: true
     });
     element.dispatchEvent(focusEvent);
     
-    // Trigger one more input event after focus
     const finalInputEvent = new Event('input', {
       bubbles: true,
       cancelable: true,
@@ -678,7 +645,6 @@ function replaceTextInEditor(correctedText) {
   
   const isLinkedIn = window.location.hostname === 'www.linkedin.com';
   
-  // LinkedIn-specific handling
   if (isLinkedIn) {
     return replaceTextInLinkedIn(correctedText);
   }
@@ -858,7 +824,6 @@ if (document.readyState === 'loading') {
 
 console.log("Grammar Fixer content script loaded successfully");
 
-// LinkedIn debugging utility
 function debugLinkedInIntegration() {
   if (window.location.hostname !== 'www.linkedin.com') {
     console.log("Not on LinkedIn, debugging not available");
@@ -867,7 +832,6 @@ function debugLinkedInIntegration() {
   
   console.log("=== LinkedIn Integration Debug ===");
   
-  // Find all potential message composers
   const selectors = [
     'div[data-placeholder*="message"]',
     'div[data-placeholder*="Message"]',
@@ -903,10 +867,8 @@ function debugLinkedInIntegration() {
     }
   });
   
-  // Check for active element
   console.log("Active element:", document.activeElement);
   
-  // Check for selection
   const selection = window.getSelection();
   console.log("Current selection:", {
     rangeCount: selection.rangeCount,
@@ -918,5 +880,4 @@ function debugLinkedInIntegration() {
   console.log("=== End LinkedIn Debug ===");
 }
 
-// Expose debug function globally for testing
 window.debugLinkedInGrammarFixer = debugLinkedInIntegration;
