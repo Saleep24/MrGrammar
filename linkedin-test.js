@@ -1,10 +1,6 @@
-// LinkedIn Integration Test Script
-// Run this in the browser console on LinkedIn to test the integration
-
 (function() {
   console.log("=== LinkedIn Grammar Fixer Test ===");
   
-  // Test 1: Check if we're on LinkedIn
   if (window.location.hostname !== 'www.linkedin.com') {
     console.log("❌ Not on LinkedIn - test cannot run");
     return;
@@ -12,7 +8,6 @@
   
   console.log("✅ On LinkedIn domain");
   
-  // Test 2: Check if debug function is available
   if (typeof window.debugLinkedInGrammarFixer === 'function') {
     console.log("✅ Debug function available");
     window.debugLinkedInGrammarFixer();
@@ -20,7 +15,6 @@
     console.log("❌ Debug function not available - extension may not be loaded");
   }
   
-  // Test 3: Check for message composers
   const selectors = [
     'div[data-placeholder*="message"]',
     'div[data-placeholder*="Message"]',
@@ -51,14 +45,13 @@
     console.log(`✅ Total composers found: ${foundComposers}`);
   }
   
-  // Test 4: Check for active element
   if (document.activeElement) {
     console.log("✅ Active element found:", document.activeElement.tagName);
   } else {
     console.log("ℹ️ No active element");
   }
   
-  // Test 5: Check for text selection
+
   const selection = window.getSelection();
   if (selection.rangeCount > 0) {
     console.log("✅ Text selection found:", selection.toString());
@@ -66,7 +59,7 @@
     console.log("ℹ️ No text selection");
   }
   
-  // Test 6: Simulate a simple text replacement test
+
   console.log("\n=== Testing Text Replacement ===");
   
   const testComposer = document.querySelector('div[contenteditable="true"], div[role="textbox"]');
@@ -77,13 +70,13 @@
     const testText = "This is a test message for grammar correction.";
     
     try {
-      // Focus the composer
+
       testComposer.focus();
       
-      // Clear and set test text
+
       testComposer.textContent = testText;
       
-      // Trigger events
+
       const inputEvent = new Event('input', { bubbles: true, cancelable: true });
       testComposer.dispatchEvent(inputEvent);
       
@@ -92,7 +85,7 @@
       console.log("Test text:", testText);
       console.log("Current text:", testComposer.textContent);
       
-      // Restore original text
+
       setTimeout(() => {
         testComposer.textContent = originalText;
         const restoreEvent = new Event('input', { bubbles: true, cancelable: true });
