@@ -1,9 +1,95 @@
-function showLoadingIndicator(selectionRect) {
+// Global flag to prevent multiple loading indicators
+let isLoadingIndicatorActive = false;
+let loadingTimeout = null;
 
+function showLoadingIndicator(selectionRect) {
+  // Prevent multiple loading indicators
+  if (isLoadingIndicatorActive) {
+    console.log("Loading indicator already active, skipping duplicate");
+    return;
+  }
+  
+  // Remove any existing loading indicator
+  removeLoadingIndicator();
+  
+  isLoadingIndicatorActive = true;
+  
+  const loadingIndicator = document.createElement('div');
+  loadingIndicator.id = 'mr-grammar-loading';
+  loadingIndicator.style.cssText = `
+    position: fixed;
+    background: #1f1f1f;
+    color: #ffffff;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 10000;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    border: 1px solid #333;
+  `;
+  
+  if (selectionRect && selectionRect.width > 0) {
+    loadingIndicator.style.left = selectionRect.left + 'px';
+    loadingIndicator.style.top = (selectionRect.bottom + 10) + 'px';
+  } else {
+    loadingIndicator.style.left = '50%';
+    loadingIndicator.style.top = '20px';
+    loadingIndicator.style.transform = 'translateX(-50%)';
+  }
+  
+  loadingIndicator.textContent = 'Fixing grammar...';
+  document.body.appendChild(loadingIndicator);
+  
+  // Fade in
+  setTimeout(() => {
+    if (loadingIndicator.parentNode) {
+      loadingIndicator.style.opacity = '1';
+    }
+  }, 10);
+  
+  // Safety timeout to prevent stuck loading indicators (15 seconds max)
+  if (loadingTimeout) {
+    clearTimeout(loadingTimeout);
+  }
+  loadingTimeout = setTimeout(() => {
+    console.log("Loading indicator timeout reached, removing indicator");
+    removeLoadingIndicator();
+  }, 15000);
 }
 
 function removeLoadingIndicator() {
-
+  // Clear the timeout
+  if (loadingTimeout) {
+    clearTimeout(loadingTimeout);
+    loadingTimeout = null;
+  }
+  
+  const existingIndicator = document.getElementById('mr-grammar-loading');
+  if (existingIndicator) {
+    isLoadingIndicatorActive = false;
+    existingIndicator.style.opacity = '0';
+    setTimeout(() => {
+      if (existingIndicator.parentNode) {
+        existingIndicator.parentNode.removeChild(existingIndicator);
+      }
+    }, 200);
+  } else {
+    // Reset flag even if no indicator found
+    isLoadingIndicatorActive = false;
+  }
+  
+  // Also remove any duplicate indicators that might exist
+  const allIndicators = document.querySelectorAll('[id*="mr-grammar-loading"], [id*="grammar-loading"]');
+  allIndicators.forEach(indicator => {
+    if (indicator.parentNode) {
+      indicator.parentNode.removeChild(indicator);
+    }
+  });
 }
 
 function showInlineNotification(message, isSuccess = true, selectionRect = null) {
@@ -463,10 +549,20 @@ chrome.runtime.onMessage.addListener((request) => {
   }
   
   if (request.action === "startProcessing") {
-    // Do nothing - silent operation
+    // Show loading indicator
+    const selection = window.getSelection();
+    let selectionRect = null;
+    if (selection.rangeCount > 0) {
+      selectionRect = selection.getRangeAt(0).getBoundingClientRect();
+    }
+    showLoadingIndicator(selectionRect);
   }
   else if (request.action === "replaceText") {
     console.log("Received corrected text");
+    
+    // Remove loading indicator
+    removeLoadingIndicator();
+    
     const success = replaceTextInEditor(request.correctedText);
     
     // Track actual text replacement success/failure
@@ -475,7 +571,8 @@ chrome.runtime.onMessage.addListener((request) => {
     }
   } 
   else if (request.action === "showError") {
-    // Do nothing - silent operation
+    // Remove loading indicator on error
+    removeLoadingIndicator();
   }
 });
 
