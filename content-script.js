@@ -1,6 +1,11 @@
+// Prevent multiple script injections
+if (typeof window.mrGrammarLoaded === 'undefined') {
+  window.mrGrammarLoaded = true;
+
 // Global flag to prevent multiple loading indicators
 let isLoadingIndicatorActive = false;
 let loadingTimeout = null;
+let lastProcessingTime = 0;
 
 function showLoadingIndicator(selectionRect) {
   // Prevent multiple loading indicators
@@ -33,13 +38,42 @@ function showLoadingIndicator(selectionRect) {
     border: 1px solid #333;
   `;
   
-  if (selectionRect && selectionRect.width > 0) {
+  if (selectionRect && selectionRect.width > 0 && selectionRect.height > 0) {
+    // Position near the selected text
     loadingIndicator.style.left = selectionRect.left + 'px';
     loadingIndicator.style.top = (selectionRect.bottom + 10) + 'px';
+    console.log("Positioned loading indicator near selection");
   } else {
-    loadingIndicator.style.left = '50%';
-    loadingIndicator.style.top = '20px';
-    loadingIndicator.style.transform = 'translateX(-50%)';
+    // Try to find an active editor on LinkedIn and position near it
+    const isLinkedIn = window.location.hostname === 'www.linkedin.com';
+    let positioned = false;
+    
+    if (isLinkedIn) {
+      const activeEditor = document.querySelector([
+        'div[contenteditable="true"]:focus',
+        'div[role="textbox"]:focus',
+        'div[data-placeholder*="message"]:focus',
+        'div[aria-label*="message"]:focus'
+      ].join(',')) || document.activeElement;
+      
+      if (activeEditor && activeEditor.getBoundingClientRect) {
+        const editorRect = activeEditor.getBoundingClientRect();
+        if (editorRect.width > 0 && editorRect.height > 0) {
+          loadingIndicator.style.left = editorRect.left + 'px';
+          loadingIndicator.style.top = (editorRect.bottom + 10) + 'px';
+          positioned = true;
+          console.log("Positioned loading indicator near LinkedIn editor");
+        }
+      }
+    }
+    
+    if (!positioned) {
+      // Last resort: center positioning
+      loadingIndicator.style.left = '50%';
+      loadingIndicator.style.top = '20px';
+      loadingIndicator.style.transform = 'translateX(-50%)';
+      console.log("Used fallback center positioning");
+    }
   }
   
   loadingIndicator.textContent = 'Fixing grammar...';
@@ -549,13 +583,31 @@ chrome.runtime.onMessage.addListener((request) => {
   }
   
   if (request.action === "startProcessing") {
-    // Show loading indicator
-    const selection = window.getSelection();
-    let selectionRect = null;
-    if (selection.rangeCount > 0) {
-      selectionRect = selection.getRangeAt(0).getBoundingClientRect();
+    // Debug: Log that we're starting processing
+    console.log("Processing started, checking for existing loading indicator");
+    
+    // Debounce: Prevent multiple rapid triggers (within 500ms)
+    const currentTime = Date.now();
+    if (currentTime - lastProcessingTime < 500) {
+      console.log("Ignoring rapid duplicate startProcessing call");
+      return;
     }
-    showLoadingIndicator(selectionRect);
+    lastProcessingTime = currentTime;
+    
+    // Show loading indicator only if one isn't already active
+    if (!isLoadingIndicatorActive) {
+      const selection = window.getSelection();
+      let selectionRect = null;
+      if (selection.rangeCount > 0) {
+        selectionRect = selection.getRangeAt(0).getBoundingClientRect();
+        console.log("Selection found, positioning near text:", selectionRect);
+      } else {
+        console.log("No selection found, will use fallback positioning");
+      }
+      showLoadingIndicator(selectionRect);
+    } else {
+      console.log("Loading indicator already active, skipping startProcessing");
+    }
   }
   else if (request.action === "replaceText") {
     console.log("Received corrected text");
@@ -839,3 +891,5 @@ window.debugGrammarStats = async function() {
     console.error('Error debugging statistics:', error);
   }
 };
+
+} // End of script injection protection
