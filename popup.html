@@ -7,66 +7,50 @@
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-  <div class="popup-container">
-    <!-- Header Section -->
-    <header class="popup-header">
-      <div class="logo-section">
-        <div class="logo-icon"></div>
-        <h1 class="popup-title">MrGrammar</h1>
+  <div class="popup">
+    <!-- Header -->
+    <div class="header">
+      <div class="brand">
+        <h1>MrGrammar</h1>
+        <span class="version">v2.0</span>
       </div>
-      <div class="version-badge">v2.0</div>
-    </header>
+    </div>
 
-    <!-- Main Content -->
-    <main class="popup-main">
-      <!-- Description -->
-      <div class="description-section">
-        <p class="description-text">
-          Fix grammar and polish text with AI directly in your browser. Select text, right-click or use keyboard shortcuts.
-        </p>
+    <!-- Content -->
+    <div class="content">
+      <!-- Shortcut Info -->
+      <div class="shortcut-row">
+        <span class="shortcut-label">Shortcut</span>
+        <kbd class="shortcut-key" id="keyboard-shortcut">⌘+Shift+E</kbd>
       </div>
 
-      <!-- Quick Actions -->
-      <div class="quick-actions">
-        <div class="action-card">
-          <div class="action-icon">⌨️</div>
-          <div class="action-content">
-            <h3 class="action-title">Keyboard Shortcut</h3>
-            <p class="action-description">
-              <span class="keyboard-shortcut" id="keyboard-shortcut">Ctrl+Shift+E</span>
-            </p>
-          </div>
+      <!-- Status Row -->
+      <div class="status-row">
+        <span class="status-label">Status</span>
+        <div class="status-info">
+          <div class="status-dot" id="api-status-indicator"></div>
+          <span class="status-text" id="api-status-text">Checking...</span>
+          <span class="model-tag" id="model-badge" style="display: none;"></span>
         </div>
       </div>
+    </div>
 
-      <!-- API Status Dashboard -->
-      <div class="status-dashboard">
-        <div class="status-header">
-          <h3 class="status-title">API Status</h3>
-          <div class="status-indicator" id="api-status-indicator"></div>
-        </div>
-        <div class="status-content">
-          <p class="status-text" id="api-status-text">Checking...</p>
-          <div class="model-info" id="model-info" style="display: none;">
-            <span class="model-badge" id="model-badge"></span>
-          </div>
-        </div>
-      </div>
-    </main>
-
-    <!-- Footer Actions -->
-    <footer class="popup-footer">
-      <div class="button-group">
-        <button class="btn btn-primary" id="options-btn">
-          <span class="btn-icon">⚙️</span>
-          <span class="btn-text">Settings</span>
-        </button>
-        <button class="btn btn-secondary" id="help-btn">
-          <span class="btn-icon">❓</span>
-          <span class="btn-text">Help</span>
-        </button>
-      </div>
-    </footer>
+    <!-- Actions -->
+    <div class="actions">
+      <button class="action-btn" id="options-btn" title="Settings">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M12 1v6m0 10v6m11-7h-6m-10 0H1m4.22-4.22L8.46 8.46m7.08 7.08l3.24 3.24m0-7.08l-3.24-3.24M8.46 15.54l-3.24 3.24"></path>
+        </svg>
+      </button>
+      <button class="action-btn" id="help-btn" title="Help">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+          <point cx="12" cy="17" r="1"></point>
+        </svg>
+      </button>
+    </div>
   </div>
 
   <script src="popup.js"></script>
