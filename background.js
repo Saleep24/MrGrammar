@@ -118,6 +118,9 @@ chrome.runtime.onInstalled.addListener(() => {
       try {
         const correctedText = await fixGrammarWithOpenAI(text);
         console.log("Corrected text:", correctedText); 
+
+        // Track successful grammar correction
+        await trackGrammarCorrection(text, correctedText, true);
     
         try {
           chrome.tabs.sendMessage(tabId, {
@@ -146,6 +149,9 @@ chrome.runtime.onInstalled.addListener(() => {
         }
       } catch (error) {
         console.error("Error in background.js:", error);
+        
+        // Track failed attempt
+        await trackGrammarCorrection(text, null, false);
         
         try {
           if (error.message.includes("API key")) {
@@ -252,4 +258,42 @@ chrome.runtime.onInstalled.addListener(() => {
   
   function isLinkedInTab(tab) {
     return tab && tab.url && tab.url.includes('www.linkedin.com');
+  }
+
+  // Statistics tracking functions
+  async function trackGrammarCorrection(originalText, correctedText, success) {
+    try {
+      const { grammarStats } = await chrome.storage.local.get(['grammarStats']);
+      const stats = grammarStats || {
+        totalCorrections: 0,
+        wordsCorrected: 0,
+        accuracyRate: 0,
+        successfulAttempts: 0,
+        totalAttempts: 0
+      };
+
+      // Increment total attempts
+      stats.totalAttempts++;
+
+      if (success && correctedText) {
+        // Increment successful attempts and total corrections
+        stats.successfulAttempts++;
+        stats.totalCorrections++;
+
+        // Count words corrected (count words in the original text)
+        const wordCount = originalText.trim().split(/\s+/).filter(word => word.length > 0).length;
+        stats.wordsCorrected += wordCount;
+      }
+
+      // Calculate accuracy rate
+      stats.accuracyRate = stats.totalAttempts > 0 
+        ? Math.round((stats.successfulAttempts / stats.totalAttempts) * 100)
+        : 0;
+
+      // Save updated stats
+      await chrome.storage.local.set({ grammarStats: stats });
+      console.log('Statistics updated:', stats);
+    } catch (error) {
+      console.error('Error updating statistics:', error);
+    }
   }

@@ -1,13 +1,13 @@
 function showLoadingIndicator(selectionRect) {
-  // Do nothing - silent operation
+
 }
 
 function removeLoadingIndicator() {
-  // Do nothing - silent operation
+
 }
 
 function showInlineNotification(message, isSuccess = true, selectionRect = null) {
-  // Do nothing - silent operation
+
 }
 
 function replaceTextInLinkedIn(correctedText) {
@@ -15,19 +15,18 @@ function replaceTextInLinkedIn(correctedText) {
   
   const selection = window.getSelection();
   
-  // Find the composer that contains the current selection or is focused
   let activeComposer = null;
   
-  // First, check if the selection is within a LinkedIn editor
+
   if (selection.rangeCount > 0) {
     const range = selection.getRangeAt(0);
     const selectionContainer = range.commonAncestorContainer;
     
-    // Find the closest LinkedIn editor element
+
     let element = selectionContainer.nodeType === Node.TEXT_NODE ? selectionContainer.parentElement : selectionContainer;
     while (element && element !== document.body) {
       if (element.contentEditable === 'true' || element.getAttribute('contenteditable') === 'true') {
-        // Check if this is a LinkedIn editor
+
         const isLinkedInEditor = element.matches([
           'div[data-placeholder*="message"]',
           'div[data-placeholder*="Message"]',
@@ -53,7 +52,7 @@ function replaceTextInLinkedIn(correctedText) {
     }
   }
   
-  // If no composer found from selection, try to find the focused one
+
   if (!activeComposer) {
     const allComposers = document.querySelectorAll([
       'div[data-placeholder*="message"]',
@@ -101,25 +100,25 @@ function replaceTextInLinkedIn(correctedText) {
 }
 
 function tryLinkedInReplacementMethods(composer, correctedText, selection) {
-  // Try Method 1: Direct DOM manipulation
+
   if (tryMethod1_DirectManipulation(composer, correctedText, selection)) {
     console.log("LinkedIn replacement successful with Method 1");
     return true;
   }
   
-  // Try Method 2: Programmatic insertion
+
   if (tryMethod2_ProgrammaticInsertion(composer, correctedText)) {
     console.log("LinkedIn replacement successful with Method 2");
     return true;
   }
   
-  // Try Method 3: Clipboard replacement (synchronous version)
+
   if (tryMethod3_ClipboardReplacement(composer, correctedText)) {
     console.log("LinkedIn replacement successful with Method 3");
     return true;
   }
   
-  // Try Method 4: Simulate typing
+
   if (tryMethod4_SimulateTyping(composer, correctedText)) {
     console.log("LinkedIn replacement successful with Method 4");
     return true;
@@ -144,7 +143,7 @@ function tryMethod1_DirectManipulation(composer, correctedText, selection) {
     
     triggerLinkedInEvents(composer, correctedText);
     
-    // Check if the text actually changed
+
     const newText = composer.textContent || composer.innerText || '';
     return newText !== originalText || newText.includes(correctedText);
   } catch (error) {
@@ -459,7 +458,12 @@ chrome.runtime.onMessage.addListener((request) => {
   }
   else if (request.action === "replaceText") {
     console.log("Received corrected text");
-    replaceTextInEditor(request.correctedText);
+    const success = replaceTextInEditor(request.correctedText);
+    
+    // Track actual text replacement success/failure
+    if (request.originalText) {
+      trackTextReplacement(request.originalText, request.correctedText, success);
+    }
   } 
   else if (request.action === "showError") {
     // Do nothing - silent operation
@@ -639,3 +643,45 @@ function debugLinkedInIntegration() {
 }
 
 window.debugLinkedInGrammarFixer = debugLinkedInIntegration;
+
+// Statistics tracking for actual text replacement
+async function trackTextReplacement(originalText, correctedText, success) {
+  try {
+    const { grammarStats } = await chrome.storage.local.get(['grammarStats']);
+    const stats = grammarStats || {
+      totalCorrections: 0,
+      wordsCorrected: 0,
+      accuracyRate: 0,
+      successfulAttempts: 0,
+      totalAttempts: 0,
+      replacementSuccessRate: 0,
+      successfulReplacements: 0,
+      totalReplacements: 0
+    };
+
+    // Track replacement attempts
+    stats.totalReplacements++;
+
+    if (success) {
+      stats.successfulReplacements++;
+    }
+
+    // Calculate replacement success rate
+    stats.replacementSuccessRate = stats.totalReplacements > 0 
+      ? Math.round((stats.successfulReplacements / stats.totalReplacements) * 100)
+      : 0;
+
+    // Update overall accuracy rate to include both API success and replacement success
+    const overallSuccessRate = (stats.successfulAttempts > 0 && stats.successfulReplacements > 0)
+      ? Math.round(((stats.successfulAttempts / stats.totalAttempts) * (stats.successfulReplacements / stats.totalReplacements)) * 100)
+      : stats.accuracyRate;
+    
+    stats.accuracyRate = overallSuccessRate;
+
+    // Save updated stats
+    await chrome.storage.local.set({ grammarStats: stats });
+    console.log('Text replacement statistics updated:', stats);
+  } catch (error) {
+    console.error('Error updating replacement statistics:', error);
+  }
+}
