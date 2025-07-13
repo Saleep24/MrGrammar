@@ -1,125 +1,217 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MrGrammar Options</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      max-width: 600px;
-      margin: 0 auto;
-    }
-    h1, h2 {
-      color: #333;
-    }
-    .form-group {
-      margin-bottom: 20px;
-    }
-    label {
-      display: block;
-      margin-bottom: 5px;
-      font-weight: bold;
-    }
-    input[type="text"] {
-      width: 100%;
-      padding: 8px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-size: 14px;
-    }
-    button {
-      background-color: #4285f4;
-      color: white;
-      border: none;
-      padding: 10px 16px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 14px;
-    }
-    button:hover {
-      background-color: #3367d6;
-    }
-    .status {
-      margin-top: 15px;
-      padding: 10px;
-      border-radius: 4px;
-    }
-    .success {
-      background-color: #d4edda;
-      color: #155724;
-    }
-    .error {
-      background-color: #f8d7da;
-      color: #721c24;
-    }
-    .info-box {
-      background-color: #e8f4fd;
-      border: 1px solid #b3e5fc;
-      padding: 15px;
-      border-radius: 4px;
-      margin-top: 20px;
-    }
-    .keyboard {
-      display: inline-block;
-      background: #f7f7f7;
-      border: 1px solid #ccc;
-      border-radius: 3px;
-      box-shadow: 0 1px 0 rgba(0,0,0,0.2);
-      margin: 0 0.2em;
-      padding: 0.1em 0.6em;
-      font-family: Arial, sans-serif;
-      font-size: 0.85em;
-    }
-    hr {
-      margin: 25px 0;
-      border: 0;
-      border-top: 1px solid #eee;
-    }
-    .model-info {
-      font-size: 12px;
-      color: #666;
-      margin-top: 5px;
-      line-height: 1.4;
-    }
-  </style>
+  <link rel="stylesheet" href="options.css">
 </head>
 <body>
-  <h1>Grammar Fixer Settings</h1>
-  <div class="form-group">
-    <label for="api-key">OpenAI API Key:</label>
-    <input type="text" id="api-key" placeholder="sk-...">
-    <p>You need an OpenAI API key to use this extension. Get one at <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com/api-keys</a></p>
-  </div>
-  <div class="form-group">
-    <label for="model">OpenAI Model:</label>
-    <select id="model">
-      <option value="gpt-3.5-turbo">GPT-3.5 Turbo (Faster, Lower Cost)</option>
-      <option value="gpt-4o-mini">GPT-4o Mini (Better Quality, Moderate Cost)</option>
-      <option value="gpt-4">GPT-4 (Premium Quality, Higher Cost)</option>
-      <option value="gpt-4o">GPT-4o (Latest Model, Highest Quality)</option>
-    </select>
-    <div class="model-info">
-      <strong>GPT-3.5 Turbo:</strong> Good for basic grammar fixes. Most economical option.<br>
-      <strong>GPT-4o Mini:</strong> Recommended! Better quality than 3.5 at reasonable cost.<br>
-      <strong>GPT-4:</strong> Excellent for complex text with nuanced grammar.<br>
-      <strong>GPT-4o:</strong> Latest model with the best quality for advanced corrections.
-    </div>
-  </div>
-  <button id="save">Save Settings</button>
-  <div id="status" class="status" style="display: none;"></div>
+  <div class="options-container">
+    <!-- Header -->
+    <header class="options-header">
+      <div class="header-content">
+        <div class="logo-section">
+          <div class="logo-icon">✨</div>
+          <h1 class="options-title">MrGrammar Settings</h1>
+        </div>
+        <p class="header-subtitle">Configure your AI-powered grammar assistant</p>
+      </div>
+    </header>
 
-  <hr>
-  
-  <h2>Keyboard Shortcuts</h2>
-  <div class="info-box">
-    <p><strong>Fix Grammar:</strong> <span class="keyboard">Ctrl</span> + <span class="keyboard">Shift</span> + <span class="keyboard">E</span> (Windows/Linux) or <span class="keyboard">⌘</span> + <span class="keyboard">Shift</span> + <span class="keyboard">E</span> (Mac)</p>
-    <p>You can customize these shortcuts by visiting:</p>
-    <ul>
-      <li>Chrome: <code>chrome://extensions/shortcuts</code></li>
-      <li>Edge: <code>edge://extensions/shortcuts</code></li>
-      <li>Brave: <code>brave://extensions/shortcuts</code></li>
-    </ul>
-    <p><small>Simply highlight text and use the shortcut to fix grammar instantly, without using the right-click menu.</small></p>
+    <!-- Main Content -->
+    <main class="options-main">
+      <!-- API Configuration Section -->
+      <section class="config-section">
+        <div class="section-header">
+          <h2 class="section-title">API Configuration</h2>
+          <p class="section-description">Connect your OpenAI API to enable grammar correction</p>
+        </div>
+
+        <div class="form-group">
+          <label for="api-key" class="form-label">
+            <span class="label-text">OpenAI API Key</span>
+            <span class="label-required">*</span>
+          </label>
+          <div class="input-wrapper">
+            <input 
+              type="password" 
+              id="api-key" 
+              class="form-input" 
+              placeholder="sk-..."
+              autocomplete="off"
+            >
+            <button type="button" class="input-toggle" id="toggle-api-key">
+              <span class="toggle-icon">👁️</span>
+            </button>
+          </div>
+          <p class="form-help">
+            Get your API key from 
+            <a href="https://platform.openai.com/api-keys" target="_blank" class="link">
+              platform.openai.com/api-keys
+            </a>
+          </p>
+        </div>
+
+        <div class="form-group">
+          <label for="model" class="form-label">AI Model</label>
+          <select id="model" class="form-select">
+            <option value="gpt-3.5-turbo">GPT-3.5 Turbo - Fast & Economical</option>
+            <option value="gpt-4o-mini">GPT-4o Mini - Recommended</option>
+            <option value="gpt-4">GPT-4 - Premium Quality</option>
+            <option value="gpt-4o">GPT-4o - Latest & Best</option>
+          </select>
+          
+          <div class="model-comparison">
+            <div class="model-card" data-model="gpt-3.5-turbo">
+              <div class="model-header">
+                <h4 class="model-name">GPT-3.5 Turbo</h4>
+                <span class="model-badge model-badge-economy">Economy</span>
+              </div>
+              <p class="model-description">Good for basic grammar fixes. Most economical option.</p>
+            </div>
+            
+            <div class="model-card model-card-recommended" data-model="gpt-4o-mini">
+              <div class="model-header">
+                <h4 class="model-name">GPT-4o Mini</h4>
+                <span class="model-badge model-badge-recommended">Recommended</span>
+              </div>
+              <p class="model-description">Better quality than 3.5 at reasonable cost.</p>
+            </div>
+            
+            <div class="model-card" data-model="gpt-4">
+              <div class="model-header">
+                <h4 class="model-name">GPT-4</h4>
+                <span class="model-badge model-badge-premium">Premium</span>
+              </div>
+              <p class="model-description">Excellent for complex text with nuanced grammar.</p>
+            </div>
+            
+            <div class="model-card" data-model="gpt-4o">
+              <div class="model-header">
+                <h4 class="model-name">GPT-4o</h4>
+                <span class="model-badge model-badge-latest">Latest</span>
+              </div>
+              <p class="model-description">Latest model with the best quality for advanced corrections.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" id="save" class="btn btn-primary">
+            <span class="btn-icon">💾</span>
+            <span class="btn-text">Save Settings</span>
+          </button>
+          <button type="button" id="test-connection" class="btn btn-secondary">
+            <span class="btn-icon">🔗</span>
+            <span class="btn-text">Test Connection</span>
+          </button>
+        </div>
+
+        <div id="status" class="status-message" style="display: none;"></div>
+      </section>
+
+      <!-- Keyboard Shortcuts Section -->
+      <section class="config-section">
+        <div class="section-header">
+          <h2 class="section-title">Keyboard Shortcuts</h2>
+          <p class="section-description">Quick access to grammar correction features</p>
+        </div>
+
+        <div class="shortcuts-info">
+          <div class="shortcut-card">
+            <div class="shortcut-icon">⌨️</div>
+            <div class="shortcut-content">
+              <h3 class="shortcut-title">Fix Grammar</h3>
+              <div class="shortcut-keys">
+                <span class="key">Ctrl</span>
+                <span class="key-separator">+</span>
+                <span class="key">Shift</span>
+                <span class="key-separator">+</span>
+                <span class="key">E</span>
+                <span class="platform-note">(Windows/Linux)</span>
+              </div>
+              <div class="shortcut-keys">
+                <span class="key">⌘</span>
+                <span class="key-separator">+</span>
+                <span class="key">Shift</span>
+                <span class="key-separator">+</span>
+                <span class="key">E</span>
+                <span class="platform-note">(Mac)</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="shortcuts-help">
+            <h4>Customize Shortcuts</h4>
+            <p>You can customize these shortcuts by visiting:</p>
+            <ul class="browser-links">
+              <li><strong>Chrome:</strong> <code>chrome://extensions/shortcuts</code></li>
+              <li><strong>Edge:</strong> <code>edge://extensions/shortcuts</code></li>
+              <li><strong>Brave:</strong> <code>brave://extensions/shortcuts</code></li>
+            </ul>
+            <p class="shortcut-tip">
+              <span class="tip-icon">💡</span>
+              Simply highlight text and use the shortcut to fix grammar instantly, without using the right-click menu.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Usage Statistics Section -->
+      <section class="config-section">
+        <div class="section-header">
+          <h2 class="section-title">Usage Statistics</h2>
+          <p class="section-description">Track your grammar correction activity</p>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon">📝</div>
+            <div class="stat-content">
+              <h3 class="stat-value" id="total-corrections">0</h3>
+              <p class="stat-label">Total Corrections</p>
+            </div>
+          </div>
+          
+          <div class="stat-card">
+            <div class="stat-icon">📊</div>
+            <div class="stat-content">
+              <h3 class="stat-value" id="words-corrected">0</h3>
+              <p class="stat-label">Words Corrected</p>
+            </div>
+          </div>
+          
+          <div class="stat-card">
+            <div class="stat-icon">🎯</div>
+            <div class="stat-content">
+              <h3 class="stat-value" id="accuracy-rate">0%</h3>
+              <p class="stat-label">Accuracy Rate</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="stats-actions">
+          <button type="button" id="reset-stats" class="btn btn-outline">
+            <span class="btn-icon">🔄</span>
+            <span class="btn-text">Reset Statistics</span>
+          </button>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="options-footer">
+      <div class="footer-content">
+        <p class="footer-text">
+          MrGrammar v2.0 - Powered by OpenAI API
+        </p>
+        <div class="footer-links">
+          <a href="https://github.com/Saleep24" target="_blank" class="footer-link">GitHub</a>
+          <a href="#" class="footer-link" id="export-settings">Export Settings</a>
+        </div>
+      </div>
+    </footer>
   </div>
 
   <script src="options.js"></script>

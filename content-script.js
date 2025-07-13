@@ -5,22 +5,25 @@ function showLoadingIndicator(selectionRect) {
   loadingDiv.id = 'grammar-fix-loading';
   loadingDiv.style.position = 'fixed';
   loadingDiv.style.zIndex = '9999';
-  loadingDiv.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
-  loadingDiv.style.borderRadius = '4px';
-  loadingDiv.style.padding = '10px 15px';
-  loadingDiv.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
+  loadingDiv.style.backgroundColor = 'rgba(17, 17, 17, 0.95)';
+  loadingDiv.style.color = '#ffffff';
+  loadingDiv.style.borderRadius = '8px';
+  loadingDiv.style.padding = '8px 12px';
+  loadingDiv.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
   loadingDiv.style.display = 'flex';
   loadingDiv.style.alignItems = 'center';
   loadingDiv.style.justifyContent = 'center';
-  loadingDiv.style.flexDirection = 'column';
-  loadingDiv.style.fontSize = '14px';
+  loadingDiv.style.fontSize = '13px';
+  loadingDiv.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", Roboto, sans-serif';
+  loadingDiv.style.border = '1px solid #3f3f46';
+  loadingDiv.style.backdropFilter = 'blur(10px)';
   
   const spinner = document.createElement('div');
-  spinner.style.width = '20px';
-  spinner.style.height = '20px';
-  spinner.style.marginBottom = '8px';
-  spinner.style.border = '3px solid #f3f3f3';
-  spinner.style.borderTop = '3px solid #3498db';
+  spinner.style.width = '16px';
+  spinner.style.height = '16px';
+  spinner.style.marginRight = '8px';
+  spinner.style.border = '2px solid #3f3f46';
+  spinner.style.borderTop = '2px solid #3b82f6';
   spinner.style.borderRadius = '50%';
   spinner.style.animation = 'grammar-fix-spin 1s linear infinite';
   
@@ -43,9 +46,9 @@ function showLoadingIndicator(selectionRect) {
     loadingDiv.style.top = `${selectionRect.bottom + window.scrollY + 10}px`;
     loadingDiv.style.left = `${selectionRect.left + window.scrollX}px`;
   } else {
-    loadingDiv.style.top = '50%';
+    loadingDiv.style.top = '20px';
     loadingDiv.style.left = '50%';
-    loadingDiv.style.transform = 'translate(-50%, -50%)';
+    loadingDiv.style.transform = 'translateX(-50%)';
   }
   
   document.body.appendChild(loadingDiv);
@@ -58,270 +61,64 @@ function removeLoadingIndicator() {
   }
 }
 
-chrome.runtime.onMessage.addListener((request) => {
-  if (request.action === "ping") {
-    return true; 
+function showInlineNotification(message, isSuccess = true, selectionRect = null) {
+  // Remove any existing notifications
+  const existingNotifications = document.querySelectorAll('.grammar-fix-notification');
+  existingNotifications.forEach(notification => {
+    if (notification.parentNode) {
+      notification.parentNode.removeChild(notification);
+    }
+  });
+  
+  const notification = document.createElement('div');
+  notification.className = 'grammar-fix-notification';
+  notification.style.position = 'fixed';
+  notification.style.zIndex = '9999';
+  notification.style.backgroundColor = 'rgba(17, 17, 17, 0.95)';
+  notification.style.color = isSuccess ? '#10b981' : '#ef4444';
+  notification.style.padding = '6px 10px';
+  notification.style.borderRadius = '6px';
+  notification.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+  notification.style.fontSize = '12px';
+  notification.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", Roboto, sans-serif';
+  notification.style.border = `1px solid ${isSuccess ? '#10b981' : '#ef4444'}`;
+  notification.style.backdropFilter = 'blur(10px)';
+  notification.style.opacity = '0';
+  notification.style.transform = 'translateY(-10px)';
+  notification.style.transition = 'all 0.3s ease';
+  
+  notification.textContent = message;
+  
+  // Position the notification
+  if (selectionRect) {
+    notification.style.top = `${selectionRect.bottom + window.scrollY + 5}px`;
+    notification.style.left = `${selectionRect.left + window.scrollX}px`;
+  } else {
+    notification.style.top = '20px';
+    notification.style.left = '50%';
+    notification.style.transform = 'translateX(-50%) translateY(-10px)';
   }
   
-  if (request.action === "startProcessing") {
-    const selection = window.getSelection();
-    let selectionRect = null;
-    
-    if (selection.rangeCount > 0) {
-      selectionRect = selection.getRangeAt(0).getBoundingClientRect();
-    }
-    
-    showLoadingIndicator(selectionRect);
-  }
-  else if (request.action === "replaceText") {
-    console.log("Received corrected text");
-    
-    removeLoadingIndicator();
-
-    const selection = window.getSelection();
-    
-    const isGmailCompose = window.location.hostname === 'mail.google.com' && 
-                          document.querySelector('div[role="textbox"][aria-label*="compose"]');
-    
-    if (selection.rangeCount === 0 && isGmailCompose) {
-      const composeArea = document.querySelector('div[role="textbox"][aria-label*="compose"]');
-      if (composeArea) {
-        console.log("Using Gmail compose area for text replacement");
-        
-        try {
-          composeArea.focus();
-          
-          if (window.getSelection().rangeCount > 0) {
-            const range = window.getSelection().getRangeAt(0);
-            range.deleteContents();
-            range.insertNode(document.createTextNode(request.correctedText));
-          } else {
-            composeArea.innerHTML += request.correctedText;
-          }
-          console.log("Text inserted in Gmail compose area");
-          return;
-        } catch (error) {
-          console.log("Error inserting text in Gmail compose:", error);
-        }
-      }
-    }
-    
-    if (selection.rangeCount === 0) {
-      console.log("No text selected - cannot replace text");
-      
-      const errorMessage = document.createElement('div');
-      errorMessage.style.position = 'fixed';
-      errorMessage.style.top = '20px';
-      errorMessage.style.right = '20px';
-      errorMessage.style.backgroundColor = '#f8d7da';
-      errorMessage.style.color = '#721c24';
-      errorMessage.style.padding = '10px 15px';
-      errorMessage.style.borderRadius = '4px';
-      errorMessage.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
-      errorMessage.style.zIndex = '9999';
-      errorMessage.style.maxWidth = '300px';
-      errorMessage.style.fontSize = '14px';
-      
-      errorMessage.textContent = "Could not replace text - no text selection found. Try selecting text again.";
-      
-      document.body.appendChild(errorMessage);
-      
+  document.body.appendChild(notification);
+  
+  // Animate in
+  setTimeout(() => {
+    notification.style.opacity = '1';
+    notification.style.transform = selectionRect ? 'translateY(0)' : 'translateX(-50%) translateY(0)';
+  }, 10);
+  
+  // Remove after delay
+  setTimeout(() => {
+    if (notification.parentNode) {
+      notification.style.opacity = '0';
+      notification.style.transform = selectionRect ? 'translateY(-10px)' : 'translateX(-50%) translateY(-10px)';
       setTimeout(() => {
-        if (errorMessage.parentNode) {
-          errorMessage.parentNode.removeChild(errorMessage);
+        if (notification.parentNode) {
+          notification.parentNode.removeChild(notification);
         }
-      }, 5000);
-      
-      return;
+      }, 300);
     }
-
-    try {
-      const range = selection.getRangeAt(0);
-      range.deleteContents();
-      range.insertNode(document.createTextNode(request.correctedText));
-      console.log("Text replaced successfully!");
-    } catch (error) {
-      console.error("Replacement error:", error);
-    }
-  } else if (request.action === "showError") {
-    removeLoadingIndicator();
-    
-    const errorDiv = document.createElement('div');
-    errorDiv.style.position = 'fixed';
-    errorDiv.style.top = '20px';
-    errorDiv.style.right = '20px';
-    errorDiv.style.backgroundColor = '#f8d7da';
-    errorDiv.style.color = '#721c24';
-    errorDiv.style.padding = '10px 15px';
-    errorDiv.style.borderRadius = '4px';
-    errorDiv.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
-    errorDiv.style.zIndex = '9999';
-    errorDiv.style.maxWidth = '300px';
-    errorDiv.style.fontSize = '14px';
-    
-    errorDiv.textContent = request.message;
-    
-    document.body.appendChild(errorDiv);
-    
-    setTimeout(() => {
-      if (errorDiv.parentNode) {
-        errorDiv.parentNode.removeChild(errorDiv);
-      }
-    }, 5000);
-  }
-});
-
-function setupGmailIntegration() {
-  if (window.location.hostname === 'mail.google.com') {
-    console.log("Gmail detected, setting up integration");
-    
-    const observer = new MutationObserver(mutations => {
-      const composeBoxes = document.querySelectorAll('div[role="textbox"][aria-label*="compose"]');
-      if (composeBoxes.length > 0) {
-        composeBoxes.forEach(box => {
-          if (!box.dataset.grammarFixerInitialized) {
-            box.dataset.grammarFixerInitialized = 'true';
-            console.log("Gmail compose box found and initialized");
-            
-            box.addEventListener('focus', () => {
-              console.log("Gmail compose box focused");
-            });
-          }
-        });
-      }
-    });
-    
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true
-    });
-    
-    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-      if (request.action === "ping") {
-        console.log("Ping received in Gmail");
-        sendResponse({status: "ok"});
-        return true; 
-      }
-    });
-  }
-}
-
-function setupOutlookIntegration() {
-  if (window.location.hostname.includes('outlook.office.com') || 
-      window.location.hostname.includes('outlook.live.com')) {
-    console.log("Outlook detected, setting up integration");
-    
-    const observer = new MutationObserver(mutations => {
-      const composeAreas = document.querySelectorAll([
-        'div[role="textbox"][aria-label="Message body"]', 
-        'div[role="textbox"][aria-label="Reply body"]',   
-        'div[role="textbox"][aria-label="Forward body"]'  
-      ].join(','));
-      
-      if (composeAreas.length > 0) {
-        composeAreas.forEach(area => {
-          if (!area.dataset.grammarFixerInitialized) {
-            area.dataset.grammarFixerInitialized = 'true';
-            console.log("Outlook compose area found and initialized");
-            
-            area.addEventListener('focus', () => {
-              console.log("Outlook compose area focused");
-            });
-          }
-        });
-      }
-    });
-    
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true
-    });
-  }
-}
-
-function setupSlackIntegration() {
-  if (window.location.hostname === 'app.slack.com') {
-    console.log("Slack detected, setting up integration");
-    
-    const observer = new MutationObserver(mutations => {
-      const messageComposers = document.querySelectorAll([
-        'div[data-qa="message_input"]', 
-        'div[data-qa="message_input_reply"]', 
-        'div[data-qa="message_edit_input"]' 
-      ].join(','));
-      
-      if (messageComposers.length > 0) {
-        messageComposers.forEach(composer => {
-
-          if (!composer.dataset.grammarFixerInitialized) {
-            composer.dataset.grammarFixerInitialized = 'true';
-            console.log("Slack message composer found and initialized");
-
-            composer.addEventListener('focus', () => {
-              console.log("Slack message composer focused");
-            });
-          }
-        });
-      }
-    });
-    
-
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true
-    });
-    
-    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-      if (request.action === "ping") {
-        console.log("Ping received in Slack");
-        sendResponse({status: "ok"});
-        return true; 
-      }
-    });
-  }
-}
-
-function setupLinkedInIntegration() {
-  if (window.location.hostname === 'www.linkedin.com') {
-    console.log("LinkedIn detected, setting up integration");
-    
-    const observer = new MutationObserver(mutations => {
-      const messageComposers = document.querySelectorAll([
-        'div[data-placeholder*="message"]',
-        'div[data-placeholder*="Message"]',
-        'div[role="textbox"]',
-        'div[contenteditable="true"]',
-        'div[data-test-id="compose-message-input"]',
-        'div[data-test-id="message-composer-input"]'
-      ].join(','));
-      
-      if (messageComposers.length > 0) {
-        messageComposers.forEach(composer => {
-          if (!composer.dataset.grammarFixerInitialized) {
-            composer.dataset.grammarFixerInitialized = 'true';
-            console.log("LinkedIn message composer found and initialized:", composer);
-            
-            composer.addEventListener('focus', () => {
-              console.log("LinkedIn message composer focused");
-            });
-          }
-        });
-      }
-    });
-    
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true
-    });
-    
-    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-      if (request.action === "ping") {
-        console.log("Ping received in LinkedIn");
-        sendResponse({status: "ok"});
-        return true; 
-      }
-    });
-  }
+  }, 2000);
 }
 
 function replaceTextInLinkedIn(correctedText) {
@@ -341,7 +138,9 @@ function replaceTextInLinkedIn(correctedText) {
     'div[aria-label*="message"]',
     'div[aria-label*="Message"]',
     'div[data-control-name="compose_message"]',
-    'div[data-control-name="messaging_compose"]'
+    'div[data-control-name="messaging_compose"]',
+    'div[data-placeholder*="Write a message"]',
+    'div[data-placeholder*="write a message"]'
   ].join(','));
   
   if (messageComposers.length === 0) {
@@ -372,19 +171,27 @@ function replaceTextInLinkedIn(correctedText) {
 }
 
 function tryLinkedInReplacementMethods(composer, correctedText, selection) {
+  // Try Method 1: Direct DOM manipulation
   if (tryMethod1_DirectManipulation(composer, correctedText, selection)) {
+    console.log("LinkedIn replacement successful with Method 1");
     return true;
   }
   
+  // Try Method 2: Programmatic insertion
   if (tryMethod2_ProgrammaticInsertion(composer, correctedText)) {
+    console.log("LinkedIn replacement successful with Method 2");
     return true;
   }
   
+  // Try Method 3: Clipboard replacement (synchronous version)
   if (tryMethod3_ClipboardReplacement(composer, correctedText)) {
+    console.log("LinkedIn replacement successful with Method 3");
     return true;
   }
   
+  // Try Method 4: Simulate typing
   if (tryMethod4_SimulateTyping(composer, correctedText)) {
+    console.log("LinkedIn replacement successful with Method 4");
     return true;
   }
   
@@ -394,138 +201,95 @@ function tryLinkedInReplacementMethods(composer, correctedText, selection) {
 
 function tryMethod1_DirectManipulation(composer, correctedText, selection) {
   try {
-    console.log("Trying Method 1: Direct DOM manipulation");
+    composer.focus();
     
     if (selection.rangeCount > 0) {
       const range = selection.getRangeAt(0);
-      if (composer.contains(range.commonAncestorContainer)) {
-        console.log("Replacing selected text in LinkedIn composer");
-        range.deleteContents();
-        range.insertNode(document.createTextNode(correctedText));
-        triggerLinkedInEvents(composer, correctedText);
-        return true;
-      }
+      range.deleteContents();
+      range.insertNode(document.createTextNode(correctedText));
+    } else {
+      composer.textContent = correctedText;
     }
-    
-    composer.focus();
-    composer.innerHTML = '';
-    const textNode = document.createTextNode(correctedText);
-    composer.appendChild(textNode);
-    
-    const range = document.createRange();
-    range.selectNodeContents(composer);
-    range.collapse(false);
-    selection.removeAllRanges();
-    selection.addRange(range);
     
     triggerLinkedInEvents(composer, correctedText);
     return true;
-    
   } catch (error) {
-    console.error("Method 1 failed:", error);
+    console.log("Method 1 failed:", error);
     return false;
   }
 }
 
 function tryMethod2_ProgrammaticInsertion(composer, correctedText) {
   try {
-    console.log("Trying Method 2: Programmatic insertion");
-    
     composer.focus();
-    
-    composer.textContent = '';
-    
-    let currentText = '';
-    for (let i = 0; i < correctedText.length; i++) {
-      currentText += correctedText[i];
-      composer.textContent = currentText;
-      
-      const inputEvent = new Event('input', {
-        bubbles: true,
-        cancelable: true,
-        composed: true
-      });
-      composer.dispatchEvent(inputEvent);
-    }
     
     const range = document.createRange();
     range.selectNodeContents(composer);
     range.collapse(false);
+    
     const selection = window.getSelection();
     selection.removeAllRanges();
     selection.addRange(range);
     
+    range.insertNode(document.createTextNode(correctedText));
+    
     triggerLinkedInEvents(composer, correctedText);
     return true;
-    
   } catch (error) {
-    console.error("Method 2 failed:", error);
+    console.log("Method 2 failed:", error);
     return false;
   }
 }
 
 function tryMethod3_ClipboardReplacement(composer, correctedText) {
   try {
-    console.log("Trying Method 3: Clipboard replacement");
+    composer.focus();
     
-    if (!navigator.clipboard) {
-      console.log("Clipboard API not available");
-      return false;
+    // Select all content in the composer
+    const range = document.createRange();
+    range.selectNodeContents(composer);
+    const selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+    
+    // Use synchronous execCommand instead of async clipboard API
+    const textArea = document.createElement('textarea');
+    textArea.value = correctedText;
+    textArea.style.position = 'fixed';
+    textArea.style.opacity = '0';
+    textArea.style.pointerEvents = 'none';
+    document.body.appendChild(textArea);
+    
+    textArea.select();
+    const copySuccess = document.execCommand('copy');
+    document.body.removeChild(textArea);
+    
+    if (copySuccess) {
+      // Paste the content
+      const pasteSuccess = document.execCommand('paste');
+      if (pasteSuccess) {
+        triggerLinkedInEvents(composer, correctedText);
+        return true;
+      }
     }
     
-    return new Promise((resolve) => {
-      navigator.clipboard.writeText(correctedText).then(() => {
-        composer.focus();
-        
-        composer.textContent = '';
-        
-        const selectAllEvent = new KeyboardEvent('keydown', {
-          key: 'a',
-          code: 'KeyA',
-          ctrlKey: true,
-          bubbles: true,
-          cancelable: true
-        });
-        composer.dispatchEvent(selectAllEvent);
-        
-        setTimeout(() => {
-          const pasteEvent = new KeyboardEvent('keydown', {
-            key: 'v',
-            code: 'KeyV',
-            ctrlKey: true,
-            bubbles: true,
-            cancelable: true
-          });
-          composer.dispatchEvent(pasteEvent);
-          
-          triggerLinkedInEvents(composer, correctedText);
-          resolve(true);
-        }, 50);
-      }).catch((error) => {
-        console.error("Clipboard write failed:", error);
-        resolve(false);
-      });
-    });
-    
+    return false;
   } catch (error) {
-    console.error("Method 3 failed:", error);
+    console.log("Method 3 failed:", error);
     return false;
   }
 }
 
 function tryMethod4_SimulateTyping(composer, correctedText) {
   try {
-    console.log("Trying Method 4: Simulate typing");
-    
     composer.focus();
+    
+    // Clear existing content
     composer.textContent = '';
     
-    let currentText = '';
+    // Simulate typing each character
     for (let i = 0; i < correctedText.length; i++) {
       const char = correctedText[i];
-      currentText += char;
-      
-      composer.textContent = currentText;
       
       const keydownEvent = new KeyboardEvent('keydown', {
         key: char,
@@ -533,7 +297,6 @@ function tryMethod4_SimulateTyping(composer, correctedText) {
         bubbles: true,
         cancelable: true
       });
-      composer.dispatchEvent(keydownEvent);
       
       const keypressEvent = new KeyboardEvent('keypress', {
         key: char,
@@ -541,14 +304,13 @@ function tryMethod4_SimulateTyping(composer, correctedText) {
         bubbles: true,
         cancelable: true
       });
-      composer.dispatchEvent(keypressEvent);
       
-      const inputEvent = new Event('input', {
+      const inputEvent = new InputEvent('input', {
+        data: char,
+        inputType: 'insertText',
         bubbles: true,
-        cancelable: true,
-        composed: true
+        cancelable: true
       });
-      composer.dispatchEvent(inputEvent);
       
       const keyupEvent = new KeyboardEvent('keyup', {
         key: char,
@@ -556,87 +318,58 @@ function tryMethod4_SimulateTyping(composer, correctedText) {
         bubbles: true,
         cancelable: true
       });
+      
+      composer.dispatchEvent(keydownEvent);
+      composer.dispatchEvent(keypressEvent);
+      
+      // Insert the character
+      composer.textContent += char;
+      
+      composer.dispatchEvent(inputEvent);
       composer.dispatchEvent(keyupEvent);
     }
     
-    const range = document.createRange();
-    range.selectNodeContents(composer);
-    range.collapse(false);
-    const selection = window.getSelection();
-    selection.removeAllRanges();
-    selection.addRange(range);
-    
     triggerLinkedInEvents(composer, correctedText);
     return true;
-    
   } catch (error) {
-    console.error("Method 4 failed:", error);
+    console.log("Method 4 failed:", error);
     return false;
   }
 }
 
 function triggerLinkedInEvents(element, text) {
-  console.log("Triggering comprehensive LinkedIn events for state synchronization");
+  const events = [
+    new Event('input', { bubbles: true }),
+    new Event('change', { bubbles: true }),
+    new CompositionEvent('compositionstart', { bubbles: true }),
+    new CompositionEvent('compositionend', { bubbles: true, data: text }),
+    new KeyboardEvent('keyup', { bubbles: true }),
+    new Event('blur', { bubbles: true }),
+    new Event('focus', { bubbles: true })
+  ];
   
-  const inputEvent = new Event('input', {
-    bubbles: true,
-    cancelable: true,
-    composed: true
+  events.forEach(event => {
+    try {
+      element.dispatchEvent(event);
+    } catch (error) {
+      console.log("Error dispatching event:", error);
+    }
   });
-  element.dispatchEvent(inputEvent);
   
-  const changeEvent = new Event('change', {
-    bubbles: true,
-    cancelable: true
-  });
-  element.dispatchEvent(changeEvent);
-  
-  const compositionStartEvent = new CompositionEvent('compositionstart', {
-    bubbles: true,
-    cancelable: true,
-    data: text
-  });
-  element.dispatchEvent(compositionStartEvent);
-  
-  const compositionEndEvent = new CompositionEvent('compositionend', {
-    bubbles: true,
-    cancelable: true,
-    data: text
-  });
-  element.dispatchEvent(compositionEndEvent);
-  
-  const keyupEvent = new KeyboardEvent('keyup', {
-    key: 'a',
-    code: 'KeyA',
-    bubbles: true,
-    cancelable: true
-  });
-  element.dispatchEvent(keyupEvent);
-  
+  // Force a focus cycle to ensure LinkedIn's state is updated
   element.blur();
   setTimeout(() => {
     element.focus();
-    
-    const focusEvent = new Event('focus', {
-      bubbles: true,
-      cancelable: true
-    });
-    element.dispatchEvent(focusEvent);
-    
-    const finalInputEvent = new Event('input', {
-      bubbles: true,
-      cancelable: true,
-      composed: true
-    });
-    element.dispatchEvent(finalInputEvent);
-    
-  }, 10);
-  
-  console.log("LinkedIn events triggered successfully");
+  }, 50);
 }
 
 function replaceTextInEditor(correctedText) {
   const selection = window.getSelection();
+  let selectionRect = null;
+  
+  if (selection.rangeCount > 0) {
+    selectionRect = selection.getRangeAt(0).getBoundingClientRect();
+  }
   
   const isOutlook = window.location.hostname.includes('outlook.office.com') || 
                    window.location.hostname.includes('outlook.live.com');
@@ -646,7 +379,15 @@ function replaceTextInEditor(correctedText) {
   const isLinkedIn = window.location.hostname === 'www.linkedin.com';
   
   if (isLinkedIn) {
-    return replaceTextInLinkedIn(correctedText);
+    const result = replaceTextInLinkedIn(correctedText);
+    if (result) {
+      console.log("LinkedIn text replacement successful");
+      return true;
+    } else {
+      console.log("LinkedIn text replacement failed");
+      showInlineNotification("✗ Failed to fix grammar", false, selectionRect);
+      return false;
+    }
   }
   
   if (isOutlook) {
@@ -665,7 +406,6 @@ function replaceTextInEditor(correctedText) {
           range.deleteContents();
           range.insertNode(document.createTextNode(correctedText));
         } else {
-
           const range = document.createRange();
           range.selectNodeContents(composeArea);
           range.collapse(false); 
@@ -675,11 +415,12 @@ function replaceTextInEditor(correctedText) {
         return true;
       } catch (error) {
         console.error("Error inserting text in Outlook compose:", error);
+        showInlineNotification("✗ Failed to fix grammar", false, selectionRect);
+        return false;
       }
     }
   }
   
-
   if (isSlack) {
     const messageComposer = document.querySelector([
       'div[data-qa="message_input"]', 
@@ -721,10 +462,40 @@ function replaceTextInEditor(correctedText) {
         return true;
       } catch (error) {
         console.error("Error inserting text in Slack message composer:", error);
+        showInlineNotification("✗ Failed to fix grammar", false, selectionRect);
+        return false;
       }
     }
   }
   
+  // Gmail special handling
+  const isGmailCompose = window.location.hostname === 'mail.google.com' && 
+                        document.querySelector('div[role="textbox"][aria-label*="compose"]');
+  
+  if (selection.rangeCount === 0 && isGmailCompose) {
+    const composeArea = document.querySelector('div[role="textbox"][aria-label*="compose"]');
+    if (composeArea) {
+      try {
+        composeArea.focus();
+        
+        if (window.getSelection().rangeCount > 0) {
+          const range = window.getSelection().getRangeAt(0);
+          range.deleteContents();
+          range.insertNode(document.createTextNode(correctedText));
+        } else {
+          composeArea.innerHTML += correctedText;
+        }
+        console.log("Text inserted in Gmail compose area");
+        return true;
+      } catch (error) {
+        console.log("Error inserting text in Gmail compose:", error);
+        showInlineNotification("✗ Failed to fix grammar", false, selectionRect);
+        return false;
+      }
+    }
+  }
+  
+  // Generic text replacement for other sites
   if (selection.rangeCount > 0) {
     try {
       const range = selection.getRangeAt(0);
@@ -734,15 +505,21 @@ function replaceTextInEditor(correctedText) {
       return true;
     } catch (error) {
       console.error("Replacement error:", error);
+      showInlineNotification("✗ Failed to fix grammar", false, selectionRect);
+      return false;
     }
   }
   
+  // If we get here, no replacement method worked
+  console.log("No suitable text replacement method found");
+  showInlineNotification("✗ No text selected for grammar fix", false, selectionRect);
   return false;
 }
 
+// Single message listener to handle all actions
 chrome.runtime.onMessage.addListener((request) => {
   if (request.action === "ping") {
-    return true;
+    return true; 
   }
   
   if (request.action === "startProcessing") {
@@ -758,59 +535,106 @@ chrome.runtime.onMessage.addListener((request) => {
   else if (request.action === "replaceText") {
     console.log("Received corrected text");
     removeLoadingIndicator();
-    
-    if (!replaceTextInEditor(request.correctedText)) {
-      const errorMessage = document.createElement('div');
-      errorMessage.style.position = 'fixed';
-      errorMessage.style.top = '20px';
-      errorMessage.style.right = '20px';
-      errorMessage.style.backgroundColor = '#f8d7da';
-      errorMessage.style.color = '#721c24';
-      errorMessage.style.padding = '10px 15px';
-      errorMessage.style.borderRadius = '4px';
-      errorMessage.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
-      errorMessage.style.zIndex = '9999';
-      errorMessage.style.maxWidth = '300px';
-      errorMessage.style.fontSize = '14px';
-      
-      errorMessage.textContent = "Could not replace text. Please try selecting text again.";
-      
-      document.body.appendChild(errorMessage);
-      
-      setTimeout(() => {
-        if (errorMessage.parentNode) {
-          errorMessage.parentNode.removeChild(errorMessage);
-        }
-      }, 5000);
-    }
-  } else if (request.action === "showError") {
+    replaceTextInEditor(request.correctedText);
+  } 
+  else if (request.action === "showError") {
     removeLoadingIndicator();
-    
-    const errorDiv = document.createElement('div');
-    errorDiv.style.position = 'fixed';
-    errorDiv.style.top = '20px';
-    errorDiv.style.right = '20px';
-    errorDiv.style.backgroundColor = '#f8d7da';
-    errorDiv.style.color = '#721c24';
-    errorDiv.style.padding = '10px 15px';
-    errorDiv.style.borderRadius = '4px';
-    errorDiv.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
-    errorDiv.style.zIndex = '9999';
-    errorDiv.style.maxWidth = '300px';
-    errorDiv.style.fontSize = '14px';
-    
-    errorDiv.textContent = request.message;
-    
-    document.body.appendChild(errorDiv);
-    
-    setTimeout(() => {
-      if (errorDiv.parentNode) {
-        errorDiv.parentNode.removeChild(errorDiv);
-      }
-    }, 5000);
+    showInlineNotification(`✗ ${request.message}`, false);
   }
 });
 
+function setupGmailIntegration() {
+  if (window.location.hostname !== 'mail.google.com') return;
+  
+  const observer = new MutationObserver(() => {
+    const composeAreas = document.querySelectorAll('div[role="textbox"][aria-label*="compose"]');
+    composeAreas.forEach(area => {
+      if (!area.hasAttribute('data-grammar-fix-setup')) {
+        area.setAttribute('data-grammar-fix-setup', 'true');
+        console.log("Gmail compose area detected and set up");
+      }
+    });
+  });
+  
+  observer.observe(document.body, { childList: true, subtree: true });
+}
+
+function setupOutlookIntegration() {
+  if (!window.location.hostname.includes('outlook.office.com') && 
+      !window.location.hostname.includes('outlook.live.com')) return;
+  
+  const observer = new MutationObserver(() => {
+    const composeAreas = document.querySelectorAll([
+      'div[role="textbox"][aria-label="Message body"]',
+      'div[role="textbox"][aria-label="Reply body"]',
+      'div[role="textbox"][aria-label="Forward body"]'
+    ].join(','));
+    
+    composeAreas.forEach(area => {
+      if (!area.hasAttribute('data-grammar-fix-setup')) {
+        area.setAttribute('data-grammar-fix-setup', 'true');
+        console.log("Outlook compose area detected and set up");
+      }
+    });
+  });
+  
+  observer.observe(document.body, { childList: true, subtree: true });
+}
+
+function setupSlackIntegration() {
+  if (window.location.hostname !== 'app.slack.com') return;
+  
+  const observer = new MutationObserver(() => {
+    const messageComposers = document.querySelectorAll([
+      'div[data-qa="message_input"]', 
+      'div[data-qa="message_input_reply"]', 
+      'div[data-qa="message_edit_input"]'
+    ].join(','));
+    
+    messageComposers.forEach(composer => {
+      if (!composer.hasAttribute('data-grammar-fix-setup')) {
+        composer.setAttribute('data-grammar-fix-setup', 'true');
+        console.log("Slack message composer detected and set up");
+      }
+    });
+  });
+  
+  observer.observe(document.body, { childList: true, subtree: true });
+}
+
+function setupLinkedInIntegration() {
+  if (window.location.hostname !== 'www.linkedin.com') return;
+  
+  const observer = new MutationObserver(() => {
+    const messageComposers = document.querySelectorAll([
+      'div[data-placeholder*="message"]',
+      'div[data-placeholder*="Message"]',
+      'div[role="textbox"]',
+      'div[contenteditable="true"]',
+      'div[data-test-id="compose-message-input"]',
+      'div[data-test-id="message-composer-input"]',
+      'div[data-test-id="messaging-compose-input"]',
+      'div[data-test-id="compose-input"]',
+      'div[aria-label*="message"]',
+      'div[aria-label*="Message"]',
+      'div[data-control-name="compose_message"]',
+      'div[data-control-name="messaging_compose"]',
+      'div[data-placeholder*="Write a message"]',
+      'div[data-placeholder*="write a message"]'
+    ].join(','));
+    
+    messageComposers.forEach(composer => {
+      if (!composer.hasAttribute('data-grammar-fix-setup')) {
+        composer.setAttribute('data-grammar-fix-setup', 'true');
+        console.log("LinkedIn message composer detected and set up");
+      }
+    });
+  });
+  
+  observer.observe(document.body, { childList: true, subtree: true });
+}
+
+// Initialize integrations
 setupGmailIntegration();
 setupOutlookIntegration();
 setupSlackIntegration();
