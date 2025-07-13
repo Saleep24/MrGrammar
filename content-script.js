@@ -23,19 +23,19 @@ function showLoadingIndicator(selectionRect) {
   loadingIndicator.id = 'mr-grammar-loading';
   loadingIndicator.style.cssText = `
     position: fixed;
-    background: #ffffff;
-    color: #1a1a1a;
+    background: #1f1f1f;
+    color: #ffffff;
     padding: 8px 16px;
     border-radius: 6px;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     font-size: 14px;
     font-weight: 500;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
     z-index: 10000;
     pointer-events: none;
     opacity: 0;
     transition: opacity 0.2s ease;
-    border: 1px solid #e2e8f0;
+    border: 1px solid #27272a;
   `;
   
   if (selectionRect && selectionRect.width > 0 && selectionRect.height > 0) {

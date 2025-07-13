@@ -5,27 +5,27 @@
   box-sizing: border-box;
 }
 
-/* CSS Custom Properties for Clean Light Design System */
+/* CSS Custom Properties for Clean Dark Design System */
 :root {
-  /* Color Palette - Clean Light Theme inspired by Cluely */
-  --color-bg-primary: #ffffff;
-  --color-bg-secondary: #f8f9fa;
-  --color-bg-tertiary: #f1f3f4;
-  --color-bg-elevated: #ffffff;
+  /* Color Palette - Clean Dark Theme */
+  --color-bg-primary: #0a0a0a;
+  --color-bg-secondary: #111111;
+  --color-bg-tertiary: #1a1a1a;
+  --color-bg-elevated: #1f1f1f;
   
-  --color-text-primary: #1a1a1a;
-  --color-text-secondary: #4a5568;
-  --color-text-tertiary: #718096;
-  --color-text-muted: #a0a0a0;
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #e2e8f0;
+  --color-text-tertiary: #a1a1aa;
+  --color-text-muted: #71717a;
   
-  --color-border: #e2e8f0;
-  --color-border-hover: #cbd5e0;
+  --color-border: #27272a;
+  --color-border-hover: #3f3f46;
   
-  --color-accent: #2563eb;
-  --color-accent-hover: #1d4ed8;
-  --color-success: #059669;
-  --color-warning: #d97706;
-  --color-error: #dc2626;
+  --color-accent: #3b82f6;
+  --color-accent-hover: #2563eb;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
   
   /* Typography */
   --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, 'Helvetica Neue', Arial, sans-serif;
