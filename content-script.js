@@ -143,9 +143,14 @@ function tryMethod1_DirectManipulation(composer, correctedText, selection) {
     
     triggerLinkedInEvents(composer, correctedText);
     
-
+    // Give the DOM time to update
+    setTimeout(() => {}, 10);
+    
     const newText = composer.textContent || composer.innerText || '';
-    return newText !== originalText || newText.includes(correctedText);
+    // Check if the corrected text appears in the composer
+    const success = newText.includes(correctedText);
+    console.log(`Method 1 success check: "${correctedText}" found in "${newText}"? ${success}`);
+    return success;
   } catch (error) {
     console.log("Method 1 failed:", error);
     return false;
@@ -154,7 +159,6 @@ function tryMethod1_DirectManipulation(composer, correctedText, selection) {
 
 function tryMethod2_ProgrammaticInsertion(composer, correctedText) {
   try {
-    const originalText = composer.textContent || composer.innerText || '';
     composer.focus();
     
     const range = document.createRange();
@@ -169,9 +173,14 @@ function tryMethod2_ProgrammaticInsertion(composer, correctedText) {
     
     triggerLinkedInEvents(composer, correctedText);
     
-    // Check if the text actually changed
+    // Give the DOM time to update
+    setTimeout(() => {}, 10);
+    
+    // Check if the corrected text appears in the composer
     const newText = composer.textContent || composer.innerText || '';
-    return newText !== originalText || newText.includes(correctedText);
+    const success = newText.includes(correctedText);
+    console.log(`Method 2 success check: "${correctedText}" found in "${newText}"? ${success}`);
+    return success;
   } catch (error) {
     console.log("Method 2 failed:", error);
     return false;
@@ -652,36 +661,84 @@ async function trackTextReplacement(originalText, correctedText, success) {
       totalCorrections: 0,
       wordsCorrected: 0,
       accuracyRate: 0,
-      successfulAttempts: 0,
-      totalAttempts: 0,
-      replacementSuccessRate: 0,
-      successfulReplacements: 0,
-      totalReplacements: 0
+      apiSuccessCount: 0,
+      apiTotalCount: 0,
+      replacementSuccessCount: 0,
+      replacementTotalCount: 0
     };
 
-    // Track replacement attempts
-    stats.totalReplacements++;
+    // Track replacement attempt
+    stats.replacementTotalCount++;
 
     if (success) {
-      stats.successfulReplacements++;
+      stats.replacementSuccessCount++;
     }
 
-    // Calculate replacement success rate
-    stats.replacementSuccessRate = stats.totalReplacements > 0 
-      ? Math.round((stats.successfulReplacements / stats.totalReplacements) * 100)
+    // Calculate success rates
+    const apiSuccessRate = stats.apiTotalCount > 0 
+      ? Math.round((stats.apiSuccessCount / stats.apiTotalCount) * 100)
+      : 0;
+      
+    const replacementSuccessRate = stats.replacementTotalCount > 0 
+      ? Math.round((stats.replacementSuccessCount / stats.replacementTotalCount) * 100)
       : 0;
 
-    // Update overall accuracy rate to include both API success and replacement success
-    const overallSuccessRate = (stats.successfulAttempts > 0 && stats.successfulReplacements > 0)
-      ? Math.round(((stats.successfulAttempts / stats.totalAttempts) * (stats.successfulReplacements / stats.totalReplacements)) * 100)
-      : stats.accuracyRate;
-    
-    stats.accuracyRate = overallSuccessRate;
+    // Calculate overall accuracy rate (API success × Replacement success)
+    if (stats.apiTotalCount > 0 && stats.replacementTotalCount > 0) {
+      // Both API and replacement data available - calculate combined accuracy
+      stats.accuracyRate = Math.round((apiSuccessRate * replacementSuccessRate) / 100);
+    } else if (stats.apiTotalCount > 0) {
+      // Only API data available
+      stats.accuracyRate = apiSuccessRate;
+    } else {
+      stats.accuracyRate = 0;
+    }
 
     // Save updated stats
     await chrome.storage.local.set({ grammarStats: stats });
     console.log('Text replacement statistics updated:', stats);
+    console.log(`API Success: ${stats.apiSuccessCount}/${stats.apiTotalCount} (${apiSuccessRate}%)`);
+    console.log(`Replacement Success: ${stats.replacementSuccessCount}/${stats.replacementTotalCount} (${replacementSuccessRate}%)`);
+    console.log(`Overall Accuracy: ${stats.accuracyRate}%`);
   } catch (error) {
     console.error('Error updating replacement statistics:', error);
   }
 }
+
+// Debug function to check current statistics
+window.debugGrammarStats = async function() {
+  try {
+    const { grammarStats } = await chrome.storage.local.get(['grammarStats']);
+    const stats = grammarStats || {
+      totalCorrections: 0,
+      wordsCorrected: 0,
+      accuracyRate: 0,
+      apiSuccessCount: 0,
+      apiTotalCount: 0,
+      replacementSuccessCount: 0,
+      replacementTotalCount: 0
+    };
+    
+    console.log('=== GRAMMAR STATISTICS DEBUG ===');
+    console.log('Total Corrections:', stats.totalCorrections);
+    console.log('Words Corrected:', stats.wordsCorrected);
+    console.log('Accuracy Rate:', stats.accuracyRate + '%');
+    console.log('API Success:', stats.apiSuccessCount, '/', stats.apiTotalCount);
+    console.log('Replacement Success:', stats.replacementSuccessCount, '/', stats.replacementTotalCount);
+    
+    if (stats.apiTotalCount > 0) {
+      const apiRate = Math.round((stats.apiSuccessCount / stats.apiTotalCount) * 100);
+      console.log('API Success Rate:', apiRate + '%');
+    }
+    
+    if (stats.replacementTotalCount > 0) {
+      const replacementRate = Math.round((stats.replacementSuccessCount / stats.replacementTotalCount) * 100);
+      console.log('Replacement Success Rate:', replacementRate + '%');
+    }
+    
+    console.log('=== END DEBUG ===');
+    return stats;
+  } catch (error) {
+    console.error('Error debugging statistics:', error);
+  }
+};

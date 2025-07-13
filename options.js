@@ -218,7 +218,11 @@ function resetStatistics() {
       grammarStats: {
         totalCorrections: 0,
         wordsCorrected: 0,
-        accuracyRate: 0
+        accuracyRate: 0,
+        apiSuccessCount: 0,
+        apiTotalCount: 0,
+        replacementSuccessCount: 0,
+        replacementTotalCount: 0
       }
     }, () => {
       showStatus('Statistics reset successfully!', 'success');

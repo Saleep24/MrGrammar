@@ -268,16 +268,18 @@ chrome.runtime.onInstalled.addListener(() => {
         totalCorrections: 0,
         wordsCorrected: 0,
         accuracyRate: 0,
-        successfulAttempts: 0,
-        totalAttempts: 0
+        apiSuccessCount: 0,
+        apiTotalCount: 0,
+        replacementSuccessCount: 0,
+        replacementTotalCount: 0
       };
 
-      // Increment total attempts
-      stats.totalAttempts++;
+      // Track API attempt
+      stats.apiTotalCount++;
 
       if (success && correctedText) {
-        // Increment successful attempts and total corrections
-        stats.successfulAttempts++;
+        // API was successful
+        stats.apiSuccessCount++;
         stats.totalCorrections++;
 
         // Count words corrected (count words in the original text)
@@ -285,15 +287,27 @@ chrome.runtime.onInstalled.addListener(() => {
         stats.wordsCorrected += wordCount;
       }
 
-      // Calculate accuracy rate
-      stats.accuracyRate = stats.totalAttempts > 0 
-        ? Math.round((stats.successfulAttempts / stats.totalAttempts) * 100)
+      // Calculate API success rate for reference
+      const apiSuccessRate = stats.apiTotalCount > 0 
+        ? Math.round((stats.apiSuccessCount / stats.apiTotalCount) * 100)
         : 0;
+
+      // Accuracy rate will be calculated when replacement tracking data is available
+      if (stats.replacementTotalCount > 0) {
+        const replacementSuccessRate = Math.round((stats.replacementSuccessCount / stats.replacementTotalCount) * 100);
+        stats.accuracyRate = Math.round((apiSuccessRate * replacementSuccessRate) / 100);
+      } else {
+        // No replacement data yet, use API success rate
+        stats.accuracyRate = apiSuccessRate;
+      }
 
       // Save updated stats
       await chrome.storage.local.set({ grammarStats: stats });
-      console.log('Statistics updated:', stats);
+      console.log('API statistics updated:', stats);
+      console.log(`API Success: ${stats.apiSuccessCount}/${stats.apiTotalCount}`);
+      console.log(`Replacement Success: ${stats.replacementSuccessCount}/${stats.replacementTotalCount}`);
+      console.log(`Current Accuracy Rate: ${stats.accuracyRate}%`);
     } catch (error) {
-      console.error('Error updating statistics:', error);
+      console.error('Error updating API statistics:', error);
     }
   }
