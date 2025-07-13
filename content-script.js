@@ -1,124 +1,13 @@
 function showLoadingIndicator(selectionRect) {
-  removeLoadingIndicator();
-  
-  const loadingDiv = document.createElement('div');
-  loadingDiv.id = 'grammar-fix-loading';
-  loadingDiv.style.position = 'fixed';
-  loadingDiv.style.zIndex = '9999';
-  loadingDiv.style.backgroundColor = 'rgba(17, 17, 17, 0.95)';
-  loadingDiv.style.color = '#ffffff';
-  loadingDiv.style.borderRadius = '8px';
-  loadingDiv.style.padding = '8px 12px';
-  loadingDiv.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
-  loadingDiv.style.display = 'flex';
-  loadingDiv.style.alignItems = 'center';
-  loadingDiv.style.justifyContent = 'center';
-  loadingDiv.style.fontSize = '13px';
-  loadingDiv.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", Roboto, sans-serif';
-  loadingDiv.style.border = '1px solid #3f3f46';
-  loadingDiv.style.backdropFilter = 'blur(10px)';
-  
-  const spinner = document.createElement('div');
-  spinner.style.width = '16px';
-  spinner.style.height = '16px';
-  spinner.style.marginRight = '8px';
-  spinner.style.border = '2px solid #3f3f46';
-  spinner.style.borderTop = '2px solid #3b82f6';
-  spinner.style.borderRadius = '50%';
-  spinner.style.animation = 'grammar-fix-spin 1s linear infinite';
-  
-  const style = document.createElement('style');
-  style.textContent = `
-    @keyframes grammar-fix-spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-  `;
-  document.head.appendChild(style);
-  
-  const message = document.createElement('span');
-  message.textContent = 'Fixing grammar...';
-  
-  loadingDiv.appendChild(spinner);
-  loadingDiv.appendChild(message);
-  
-  if (selectionRect) {
-    loadingDiv.style.top = `${selectionRect.bottom + window.scrollY + 10}px`;
-    loadingDiv.style.left = `${selectionRect.left + window.scrollX}px`;
-  } else {
-    loadingDiv.style.top = '20px';
-    loadingDiv.style.left = '50%';
-    loadingDiv.style.transform = 'translateX(-50%)';
-  }
-  
-  document.body.appendChild(loadingDiv);
+  // Do nothing - silent operation
 }
 
 function removeLoadingIndicator() {
-  const existingIndicator = document.getElementById('grammar-fix-loading');
-  if (existingIndicator && existingIndicator.parentNode) {
-    existingIndicator.parentNode.removeChild(existingIndicator);
-  }
+  // Do nothing - silent operation
 }
 
 function showInlineNotification(message, isSuccess = true, selectionRect = null) {
-  // Remove any existing notifications
-  const existingNotifications = document.querySelectorAll('.grammar-fix-notification');
-  existingNotifications.forEach(notification => {
-    if (notification.parentNode) {
-      notification.parentNode.removeChild(notification);
-    }
-  });
-  
-  const notification = document.createElement('div');
-  notification.className = 'grammar-fix-notification';
-  notification.style.position = 'fixed';
-  notification.style.zIndex = '9999';
-  notification.style.backgroundColor = 'rgba(17, 17, 17, 0.95)';
-  notification.style.color = isSuccess ? '#10b981' : '#ef4444';
-  notification.style.padding = '6px 10px';
-  notification.style.borderRadius = '6px';
-  notification.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
-  notification.style.fontSize = '12px';
-  notification.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", Roboto, sans-serif';
-  notification.style.border = `1px solid ${isSuccess ? '#10b981' : '#ef4444'}`;
-  notification.style.backdropFilter = 'blur(10px)';
-  notification.style.opacity = '0';
-  notification.style.transform = 'translateY(-10px)';
-  notification.style.transition = 'all 0.3s ease';
-  
-  notification.textContent = message;
-  
-  // Position the notification
-  if (selectionRect) {
-    notification.style.top = `${selectionRect.bottom + window.scrollY + 5}px`;
-    notification.style.left = `${selectionRect.left + window.scrollX}px`;
-  } else {
-    notification.style.top = '20px';
-    notification.style.left = '50%';
-    notification.style.transform = 'translateX(-50%) translateY(-10px)';
-  }
-  
-  document.body.appendChild(notification);
-  
-  // Animate in
-  setTimeout(() => {
-    notification.style.opacity = '1';
-    notification.style.transform = selectionRect ? 'translateY(0)' : 'translateX(-50%) translateY(0)';
-  }, 10);
-  
-  // Remove after delay
-  setTimeout(() => {
-    if (notification.parentNode) {
-      notification.style.opacity = '0';
-      notification.style.transform = selectionRect ? 'translateY(-10px)' : 'translateX(-50%) translateY(-10px)';
-      setTimeout(() => {
-        if (notification.parentNode) {
-          notification.parentNode.removeChild(notification);
-        }
-      }, 300);
-    }
-  }, 2000);
+  // Do nothing - silent operation
 }
 
 function replaceTextInLinkedIn(correctedText) {
@@ -126,38 +15,79 @@ function replaceTextInLinkedIn(correctedText) {
   
   const selection = window.getSelection();
   
-  const messageComposers = document.querySelectorAll([
-    'div[data-placeholder*="message"]',
-    'div[data-placeholder*="Message"]',
-    'div[role="textbox"]',
-    'div[contenteditable="true"]',
-    'div[data-test-id="compose-message-input"]',
-    'div[data-test-id="message-composer-input"]',
-    'div[data-test-id="messaging-compose-input"]',
-    'div[data-test-id="compose-input"]',
-    'div[aria-label*="message"]',
-    'div[aria-label*="Message"]',
-    'div[data-control-name="compose_message"]',
-    'div[data-control-name="messaging_compose"]',
-    'div[data-placeholder*="Write a message"]',
-    'div[data-placeholder*="write a message"]'
-  ].join(','));
-  
-  if (messageComposers.length === 0) {
-    console.log("No LinkedIn message composer found");
-    return false;
-  }
-  
+  // Find the composer that contains the current selection or is focused
   let activeComposer = null;
-  for (const composer of messageComposers) {
-    if (composer === document.activeElement || composer.contains(document.activeElement)) {
-      activeComposer = composer;
-      break;
+  
+  // First, check if the selection is within a LinkedIn editor
+  if (selection.rangeCount > 0) {
+    const range = selection.getRangeAt(0);
+    const selectionContainer = range.commonAncestorContainer;
+    
+    // Find the closest LinkedIn editor element
+    let element = selectionContainer.nodeType === Node.TEXT_NODE ? selectionContainer.parentElement : selectionContainer;
+    while (element && element !== document.body) {
+      if (element.contentEditable === 'true' || element.getAttribute('contenteditable') === 'true') {
+        // Check if this is a LinkedIn editor
+        const isLinkedInEditor = element.matches([
+          'div[data-placeholder*="message"]',
+          'div[data-placeholder*="Message"]',
+          'div[role="textbox"]',
+          'div[data-test-id*="compose"]',
+          'div[data-test-id*="message"]',
+          'div[aria-label*="message"]',
+          'div[aria-label*="Message"]',
+          'div[data-placeholder*="What do you want to talk about?"]',
+          'div[data-placeholder*="Share your thoughts"]',
+          'div[data-placeholder*="Start a post"]',
+          'div[aria-label*="Text editor for creating content"]',
+          'div[aria-label*="Rich text editor"]',
+          'div[class*="ql-editor"]'
+        ].join(','));
+        
+        if (isLinkedInEditor) {
+          activeComposer = element;
+          break;
+        }
+      }
+      element = element.parentElement;
     }
   }
   
-  if (!activeComposer && messageComposers.length > 0) {
-    activeComposer = messageComposers[0];
+  // If no composer found from selection, try to find the focused one
+  if (!activeComposer) {
+    const allComposers = document.querySelectorAll([
+      'div[data-placeholder*="message"]',
+      'div[data-placeholder*="Message"]',
+      'div[role="textbox"]',
+      'div[contenteditable="true"]',
+      'div[data-test-id="compose-message-input"]',
+      'div[data-test-id="message-composer-input"]',
+      'div[data-test-id="messaging-compose-input"]',
+      'div[data-test-id="compose-input"]',
+      'div[aria-label*="message"]',
+      'div[aria-label*="Message"]',
+      'div[data-control-name="compose_message"]',
+      'div[data-control-name="messaging_compose"]',
+      'div[data-placeholder*="Write a message"]',
+      'div[data-placeholder*="write a message"]',
+      'div[data-placeholder*="What do you want to talk about?"]',
+      'div[data-placeholder*="Share your thoughts"]',
+      'div[data-placeholder*="Start a post"]',
+      'div[aria-label*="Text editor for creating content"]',
+      'div[aria-label*="Rich text editor"]',
+      'div[data-test-id="post-composer-input"]',
+      'div[data-test-id="feed-composer-input"]',
+      'div[data-test-id="share-box-input"]',
+      'div[class*="ql-editor"]',
+      'div[class*="share-creation-state"]'
+    ].join(','));
+    
+    for (const composer of allComposers) {
+      if (composer === document.activeElement || composer.contains(document.activeElement)) {
+        activeComposer = composer;
+        break;
+      }
+    }
   }
   
   if (!activeComposer) {
@@ -201,6 +131,7 @@ function tryLinkedInReplacementMethods(composer, correctedText, selection) {
 
 function tryMethod1_DirectManipulation(composer, correctedText, selection) {
   try {
+    const originalText = composer.textContent || composer.innerText || '';
     composer.focus();
     
     if (selection.rangeCount > 0) {
@@ -212,7 +143,10 @@ function tryMethod1_DirectManipulation(composer, correctedText, selection) {
     }
     
     triggerLinkedInEvents(composer, correctedText);
-    return true;
+    
+    // Check if the text actually changed
+    const newText = composer.textContent || composer.innerText || '';
+    return newText !== originalText || newText.includes(correctedText);
   } catch (error) {
     console.log("Method 1 failed:", error);
     return false;
@@ -221,6 +155,7 @@ function tryMethod1_DirectManipulation(composer, correctedText, selection) {
 
 function tryMethod2_ProgrammaticInsertion(composer, correctedText) {
   try {
+    const originalText = composer.textContent || composer.innerText || '';
     composer.focus();
     
     const range = document.createRange();
@@ -234,7 +169,10 @@ function tryMethod2_ProgrammaticInsertion(composer, correctedText) {
     range.insertNode(document.createTextNode(correctedText));
     
     triggerLinkedInEvents(composer, correctedText);
-    return true;
+    
+    // Check if the text actually changed
+    const newText = composer.textContent || composer.innerText || '';
+    return newText !== originalText || newText.includes(correctedText);
   } catch (error) {
     console.log("Method 2 failed:", error);
     return false;
@@ -385,7 +323,6 @@ function replaceTextInEditor(correctedText) {
       return true;
     } else {
       console.log("LinkedIn text replacement failed");
-      showInlineNotification("✗ Failed to fix grammar", false, selectionRect);
       return false;
     }
   }
@@ -415,7 +352,6 @@ function replaceTextInEditor(correctedText) {
         return true;
       } catch (error) {
         console.error("Error inserting text in Outlook compose:", error);
-        showInlineNotification("✗ Failed to fix grammar", false, selectionRect);
         return false;
       }
     }
@@ -462,7 +398,6 @@ function replaceTextInEditor(correctedText) {
         return true;
       } catch (error) {
         console.error("Error inserting text in Slack message composer:", error);
-        showInlineNotification("✗ Failed to fix grammar", false, selectionRect);
         return false;
       }
     }
@@ -489,7 +424,6 @@ function replaceTextInEditor(correctedText) {
         return true;
       } catch (error) {
         console.log("Error inserting text in Gmail compose:", error);
-        showInlineNotification("✗ Failed to fix grammar", false, selectionRect);
         return false;
       }
     }
@@ -505,41 +439,30 @@ function replaceTextInEditor(correctedText) {
       return true;
     } catch (error) {
       console.error("Replacement error:", error);
-      showInlineNotification("✗ Failed to fix grammar", false, selectionRect);
       return false;
     }
   }
   
   // If we get here, no replacement method worked
   console.log("No suitable text replacement method found");
-  showInlineNotification("✗ No text selected for grammar fix", false, selectionRect);
   return false;
 }
 
-// Single message listener to handle all actions
+// Simple message listener
 chrome.runtime.onMessage.addListener((request) => {
   if (request.action === "ping") {
     return true; 
   }
   
   if (request.action === "startProcessing") {
-    const selection = window.getSelection();
-    let selectionRect = null;
-    
-    if (selection.rangeCount > 0) {
-      selectionRect = selection.getRangeAt(0).getBoundingClientRect();
-    }
-    
-    showLoadingIndicator(selectionRect);
+    // Do nothing - silent operation
   }
   else if (request.action === "replaceText") {
     console.log("Received corrected text");
-    removeLoadingIndicator();
     replaceTextInEditor(request.correctedText);
   } 
   else if (request.action === "showError") {
-    removeLoadingIndicator();
-    showInlineNotification(`✗ ${request.message}`, false);
+    // Do nothing - silent operation
   }
 });
 
@@ -620,7 +543,18 @@ function setupLinkedInIntegration() {
       'div[data-control-name="compose_message"]',
       'div[data-control-name="messaging_compose"]',
       'div[data-placeholder*="Write a message"]',
-      'div[data-placeholder*="write a message"]'
+      'div[data-placeholder*="write a message"]',
+      // LinkedIn post editor selectors
+      'div[data-placeholder*="What do you want to talk about?"]',
+      'div[data-placeholder*="Share your thoughts"]',
+      'div[data-placeholder*="Start a post"]',
+      'div[aria-label*="Text editor for creating content"]',
+      'div[aria-label*="Rich text editor"]',
+      'div[data-test-id="post-composer-input"]',
+      'div[data-test-id="feed-composer-input"]',
+      'div[data-test-id="share-box-input"]',
+      'div[class*="ql-editor"]',
+      'div[class*="share-creation-state"]'
     ].join(','));
     
     messageComposers.forEach(composer => {

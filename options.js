@@ -1,26 +1,20 @@
 document.addEventListener('DOMContentLoaded', () => {
-  // Initialize options page
   initializeOptions();
   
-  // Load saved settings
   loadSettings();
   
-  // Load statistics
   loadStatistics();
 });
 
 function initializeOptions() {
-  // Add event listeners
   document.getElementById('save').addEventListener('click', saveSettings);
   document.getElementById('test-connection').addEventListener('click', testConnection);
   document.getElementById('toggle-api-key').addEventListener('click', toggleApiKeyVisibility);
   document.getElementById('reset-stats').addEventListener('click', resetStatistics);
   document.getElementById('export-settings').addEventListener('click', exportSettings);
   
-  // Add model card selection
   addModelCardSelection();
   
-  // Add interactive effects
   addInteractiveEffects();
 }
 
@@ -33,11 +27,9 @@ function addModelCardSelection() {
       const model = card.dataset.model;
       modelSelect.value = model;
       
-      // Update visual selection
       modelCards.forEach(c => c.classList.remove('selected'));
       card.classList.add('selected');
       
-      // Add selection animation
       card.style.transform = 'scale(1.02)';
       setTimeout(() => {
         card.style.transform = '';
@@ -45,7 +37,6 @@ function addModelCardSelection() {
     });
   });
   
-  // Update model cards when select changes
   modelSelect.addEventListener('change', () => {
     const selectedModel = modelSelect.value;
     modelCards.forEach(card => {
