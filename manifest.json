@@ -51,7 +51,10 @@
       "fix-grammar": {
         "suggested_key": {
           "default": "Ctrl+Shift+E",
-          "mac": "Command+Shift+E"
+          "mac": "Command+Shift+E",
+          "windows": "Ctrl+Shift+E",
+          "linux": "Ctrl+Shift+E",
+          "chromeos": "Ctrl+Shift+E"
         },
         "description": "Fix grammar of selected text"
       }
