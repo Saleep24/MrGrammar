@@ -10,7 +10,11 @@
         "https://outlook.office.com/*",
         "https://outlook.live.com/*",
         "https://app.slack.com/*",
-        "https://www.linkedin.com/*"
+        "https://www.linkedin.com/*",
+        "https://www.facebook.com/*",
+        "https://web.facebook.com/*",
+        "https://m.facebook.com/*",
+        "https://www.messenger.com/*"
     ],
     "background": {
       "service_worker": "background.js",
@@ -30,7 +34,11 @@
           "https://outlook.office.com/*",
           "https://outlook.live.com/*",
           "https://app.slack.com/*",
-          "https://www.linkedin.com/*"
+          "https://www.linkedin.com/*",
+          "https://www.facebook.com/*",
+          "https://web.facebook.com/*",
+          "https://m.facebook.com/*",
+          "https://www.messenger.com/*"
         ],
         "js": ["content-script.js"],
         "all_frames": true,
