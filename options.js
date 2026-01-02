@@ -162,11 +162,19 @@ function toggleApiKeyVisibility() {
   
   if (apiKeyInput.type === 'password') {
     apiKeyInput.type = 'text';
-    toggleIcon.textContent = '🙈';
+    // Update SVG to show "eye-off" icon
+    toggleIcon.innerHTML = `
+      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+      <line x1="1" y1="1" x2="23" y2="23"></line>
+    `;
     toggleButton.setAttribute('title', 'Hide API key');
   } else {
     apiKeyInput.type = 'password';
-    toggleIcon.textContent = '👁️';
+    // Update SVG to show "eye" icon
+    toggleIcon.innerHTML = `
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+      <circle cx="12" cy="12" r="3"></circle>
+    `;
     toggleButton.setAttribute('title', 'Show API key');
   }
 }
@@ -175,13 +183,11 @@ function loadStatistics() {
   chrome.storage.local.get(['grammarStats'], (result) => {
     const stats = result.grammarStats || {
       totalCorrections: 0,
-      wordsCorrected: 0,
-      accuracyRate: 0
+      wordsCorrected: 0
     };
     
     document.getElementById('total-corrections').textContent = stats.totalCorrections;
     document.getElementById('words-corrected').textContent = stats.wordsCorrected;
-    document.getElementById('accuracy-rate').textContent = `${stats.accuracyRate}%`;
     
     // Add animation to stats
     animateStatistics();
@@ -273,57 +279,5 @@ function showStatus(message, type) {
   }
 }
 
-// Add CSS for selected model cards
-const style = document.createElement('style');
-style.textContent = `
-  .model-card.selected {
-    border-color: var(--color-primary);
-    background: linear-gradient(135deg, rgb(99 102 241 / 0.1) 0%, rgb(139 92 246 / 0.1) 100%);
-    box-shadow: var(--shadow-md);
-  }
-  
-  .model-card.selected::after {
-    content: '✓';
-    position: absolute;
-    top: var(--space-2);
-    right: var(--space-2);
-    background: var(--color-primary);
-    color: white;
-    width: 24px;
-    height: 24px;
-    border-radius: var(--radius-full);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: var(--font-size-sm);
-    font-weight: bold;
-  }
-  
-  .model-card {
-    position: relative;
-  }
-  
-  @keyframes fadeInUp {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-  
-  .config-section {
-    animation: fadeInUp 0.6s ease-out;
-  }
-  
-  .config-section:nth-child(2) {
-    animation-delay: 0.1s;
-  }
-  
-  .config-section:nth-child(3) {
-    animation-delay: 0.2s;
-  }
-`;
-document.head.appendChild(style); 
+// All CSS styles are now defined in options.css
+// No need for dynamic style injection 

@@ -41,8 +41,11 @@
               placeholder="sk-..."
               autocomplete="off"
             >
-            <button type="button" class="input-toggle" id="toggle-api-key">
-              <span class="toggle-icon">👁️</span>
+            <button type="button" class="input-toggle" id="toggle-api-key" title="Show/Hide API Key">
+              <svg class="toggle-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
             </button>
           </div>
           <p class="form-help">
@@ -99,11 +102,9 @@
 
         <div class="form-actions">
           <button type="button" id="save" class="btn btn-primary">
-            <span class="btn-icon">💾</span>
             <span class="btn-text">Save Settings</span>
           </button>
           <button type="button" id="test-connection" class="btn btn-secondary">
-            <span class="btn-icon">🔗</span>
             <span class="btn-text">Test Connection</span>
           </button>
         </div>
@@ -120,7 +121,6 @@
 
         <div class="shortcuts-info">
           <div class="shortcut-card">
-            <div class="shortcut-icon">⌨️</div>
             <div class="shortcut-content">
               <h3 class="shortcut-title">Fix Grammar</h3>
               <div class="shortcut-keys">
@@ -151,8 +151,7 @@
               <li><strong>Brave:</strong> <code>brave://extensions/shortcuts</code></li>
             </ul>
             <p class="shortcut-tip">
-              <span class="tip-icon">💡</span>
-              Simply highlight text and use the shortcut to fix grammar instantly, without using the right-click menu.
+              <strong>Tip:</strong> Simply highlight text and use the shortcut to fix grammar instantly, without using the right-click menu.
             </p>
           </div>
         </div>
@@ -167,7 +166,6 @@
 
         <div class="stats-grid">
           <div class="stat-card">
-            <div class="stat-icon">📝</div>
             <div class="stat-content">
               <h3 class="stat-value" id="total-corrections">0</h3>
               <p class="stat-label">Total Corrections</p>
@@ -175,25 +173,15 @@
           </div>
           
           <div class="stat-card">
-            <div class="stat-icon">📊</div>
             <div class="stat-content">
               <h3 class="stat-value" id="words-corrected">0</h3>
               <p class="stat-label">Words Corrected</p>
-            </div>
-          </div>
-          
-          <div class="stat-card">
-            <div class="stat-icon">🎯</div>
-            <div class="stat-content">
-              <h3 class="stat-value" id="accuracy-rate">0%</h3>
-              <p class="stat-label">Accuracy Rate</p>
             </div>
           </div>
         </div>
 
         <div class="stats-actions">
           <button type="button" id="reset-stats" class="btn btn-outline">
-            <span class="btn-icon">🔄</span>
             <span class="btn-text">Reset Statistics</span>
           </button>
         </div>

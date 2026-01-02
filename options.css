@@ -137,6 +137,8 @@ body {
 .section-header {
   margin-bottom: var(--space-6);
   text-align: center;
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .section-title {
@@ -144,6 +146,7 @@ body {
   font-weight: 600;
   color: var(--color-text-primary);
   margin-bottom: var(--space-2);
+  letter-spacing: -0.025em;
 }
 
 .section-description {
@@ -221,7 +224,9 @@ body {
 }
 
 .toggle-icon {
-  font-size: var(--font-size-sm);
+  display: block;
+  width: 20px;
+  height: 20px;
 }
 
 .form-help {
@@ -270,7 +275,7 @@ body {
 }
 
 .model-card-recommended::before {
-  content: '⭐ Recommended';
+  content: 'RECOMMENDED';
   position: absolute;
   top: -12px;
   left: 50%;
@@ -280,7 +285,8 @@ body {
   padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-full);
   font-size: var(--font-size-xs);
-  font-weight: 500;
+  font-weight: 600;
+  letter-spacing: 0.05em;
 }
 
 .model-card.selected {
@@ -383,12 +389,14 @@ body {
   background: var(--color-accent);
   color: white;
   border-color: var(--color-accent);
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.3);
 }
 
 .btn-primary:hover {
   background: var(--color-accent-hover);
   border-color: var(--color-accent-hover);
   transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.4);
 }
 
 .btn-secondary {
@@ -413,10 +421,6 @@ body {
   background: var(--color-bg-secondary);
   border-color: var(--color-border-hover);
   color: var(--color-text-primary);
-}
-
-.btn-icon {
-  font-size: var(--font-size-sm);
 }
 
 /* Status Messages */
@@ -453,25 +457,10 @@ body {
 }
 
 .shortcut-card {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
   padding: var(--space-5);
   background: var(--color-bg-secondary);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-}
-
-.shortcut-icon {
-  font-size: var(--font-size-2xl);
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-bg-tertiary);
-  border-radius: var(--radius-lg);
-  color: var(--color-text-secondary);
 }
 
 .shortcut-content {
@@ -551,21 +540,19 @@ body {
 }
 
 .shortcut-tip {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
   margin-top: var(--space-4);
-  padding: var(--space-3);
+  padding: var(--space-3) var(--space-4);
   background: rgb(59 130 246 / 0.1);
   border-radius: var(--radius-md);
+  border-left: 3px solid var(--color-accent);
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
+  line-height: 1.6;
 }
 
-.tip-icon {
-  font-size: var(--font-size-base);
-  flex-shrink: 0;
-  margin-top: 2px;
+.shortcut-tip strong {
+  color: var(--color-accent);
+  font-weight: 600;
 }
 
 /* Statistics Section */
@@ -577,42 +564,48 @@ body {
 }
 
 .stat-card {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-4);
+  padding: var(--space-6);
   background: var(--color-bg-secondary);
-  border: 1px solid var(--color-border);
+  border: 2px solid var(--color-border);
   border-radius: var(--radius-lg);
+  transition: var(--transition-fast);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-accent), var(--color-accent-hover));
+  opacity: 0;
   transition: var(--transition-fast);
 }
 
 .stat-card:hover {
   transform: translateY(-2px);
   background: var(--color-bg-elevated);
+  border-color: var(--color-accent);
 }
 
-.stat-icon {
-  font-size: var(--font-size-xl);
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-bg-tertiary);
-  border-radius: var(--radius-md);
-  color: var(--color-text-secondary);
+.stat-card:hover::before {
+  opacity: 1;
 }
 
 .stat-content {
-  flex: 1;
+  width: 100%;
 }
 
 .stat-value {
-  font-size: var(--font-size-2xl);
+  font-size: var(--font-size-3xl);
   font-weight: 600;
   color: var(--color-accent);
-  margin-bottom: var(--space-1);
+  margin-bottom: var(--space-2);
+  display: block;
 }
 
 .stat-label {
@@ -701,11 +694,6 @@ body {
 }
 
 @media (max-width: 480px) {
-  .shortcut-card {
-    flex-direction: column;
-    text-align: center;
-  }
-  
   .shortcut-keys {
     justify-content: center;
   }
