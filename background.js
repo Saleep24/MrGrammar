@@ -175,7 +175,7 @@ chrome.runtime.onInstalled.addListener(() => {
           messages: [
             {
               role: "system",
-              content: "You are a professional grammar and writing expert. Your task is to correct grammar, spelling, punctuation, and improve text clarity and flow. Keep the same meaning, tone, and style of the original text. Only return the corrected version without explanations or comments."
+              content: "You are a professional grammar assistant. Your task is to STRICTLY correct grammar, spelling, and punctuation errors only. Do NOT improve clarity, flow, or style. Do NOT change the sentence structure or tone. You must preserve the original phrasing exactly, only fixing objective errors. Return only the corrected text."
             },
             {
               role: "user",
