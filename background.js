@@ -22,10 +22,14 @@ chrome.runtime.onInstalled.addListener(() => {
       });
       const selectedText = results[0].result;
       if (!selectedText) {
-        chrome.tabs.sendMessage(activeTab.id, {
-          action: "showError",
-          message: "Please select some text before using the keyboard shortcut."
-        });
+        try {
+          await chrome.tabs.sendMessage(activeTab.id, {
+            action: "showError",
+            message: "Please select some text before using the keyboard shortcut."
+          });
+        } catch (e) {
+          console.log("Could not show error message - content script not available");
+        }
         return;
       }
       processSelectedText(selectedText, activeTab.id);
@@ -122,15 +126,15 @@ chrome.runtime.onInstalled.addListener(() => {
         await trackGrammarCorrection(text, null, false);
         try {
           if (error.message.includes("API key")) {
-            chrome.tabs.sendMessage(tabId, {
+            await chrome.tabs.sendMessage(tabId, {
               action: "showError",
               message: "Please set your OpenAI API key in the extension options."
-            });
+            }).catch(() => {});
           } else {
-            chrome.tabs.sendMessage(tabId, {
+            await chrome.tabs.sendMessage(tabId, {
               action: "showError",
               message: `Error: ${error.message || "Failed to process text"}`
-            });
+            }).catch(() => {});
           }
         } catch (msgError) {
           console.log("Could not show error message to user");
@@ -175,7 +179,42 @@ chrome.runtime.onInstalled.addListener(() => {
           messages: [
             {
               role: "system",
-              content: "You are a professional grammar assistant. Your task is to STRICTLY correct grammar, spelling, and punctuation errors only. Do NOT improve clarity, flow, or style. Do NOT change the sentence structure or tone. You must preserve the original phrasing exactly, only fixing objective errors. Return only the corrected text."
+              content: `You are a grammar-only correction tool. Your ONLY job is to fix:
+- Spelling errors
+- Grammar errors (subject-verb agreement, tense, articles, pronouns)
+- Punctuation errors
+
+STRICT RULES:
+- DO NOT change word choice (even if a "better" word exists)
+- DO NOT restructure sentences
+- DO NOT add or remove words unless grammatically necessary
+- DO NOT change tone, formality, or style
+- DO NOT "improve" or "enhance" the writing
+- PRESERVE intentional repetition, casual language, and stylistic choices
+- If the text is already grammatically correct, return it unchanged
+
+EXAMPLES:
+Input: "I goes to the store yesterday and buyed milk"
+Output: "I went to the store yesterday and bought milk"
+
+Input: "The data shows that users prefers the new design"
+Output: "The data shows that users prefer the new design"
+
+Input: "Me and him went to the meeting"
+Output: "He and I went to the meeting"
+
+Input: "Their going to there house over they're"
+Output: "They're going to their house over there"
+
+Input: "This is really really important!!!"
+Output: "This is really really important!!!"
+(No change - repetition and exclamation marks are stylistic choices, not errors)
+
+Input: "I wanna grab some food cuz im hungry"
+Output: "I wanna grab some food cuz I'm hungry"
+(Only fixed capitalization of "I'm" - preserved casual tone and slang)
+
+Return ONLY the corrected text with no explanations, comments, or quotation marks.`
             },
             {
               role: "user",

@@ -4,6 +4,10 @@ let isLoadingIndicatorActive = false;
 let loadingTimeout = null;
 let lastProcessingTime = 0;
 function showLoadingIndicator(selectionRect) {
+  // Only show in top-level frame, not iframes
+  if (window.self !== window.top) {
+    return;
+  }
   if (isLoadingIndicatorActive) {
     console.log("Loading indicator already active, skipping duplicate");
     return;
@@ -99,6 +103,56 @@ function removeLoadingIndicator() {
   });
 }
 function showInlineNotification(message, isSuccess = true, selectionRect = null) {
+}
+function showErrorNotification(message) {
+  // Only show error notifications in the top-level frame, not iframes
+  if (window.self !== window.top) {
+    return;
+  }
+
+  // Remove any existing error notifications
+  const existingErrors = document.querySelectorAll('#mr-grammar-error, .mr-grammar-error');
+  existingErrors.forEach(el => el.remove());
+
+  const errorNotification = document.createElement('div');
+  errorNotification.id = 'mr-grammar-error';
+  errorNotification.className = 'mr-grammar-error';
+  errorNotification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #dc2626;
+    color: #ffffff;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    z-index: 10001;
+    max-width: 400px;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  `;
+  errorNotification.textContent = message;
+  document.body.appendChild(errorNotification);
+
+  // Fade in
+  setTimeout(() => {
+    errorNotification.style.opacity = '1';
+  }, 10);
+
+  // Auto-remove after 4 seconds
+  setTimeout(() => {
+    errorNotification.style.opacity = '0';
+    setTimeout(() => {
+      if (errorNotification.parentNode) {
+        errorNotification.remove();
+      }
+    }, 300);
+  }, 4000);
 }
 function replaceTextInFacebook(correctedText) {
   console.log("Attempting Facebook-specific text replacement");
@@ -236,6 +290,11 @@ function replaceTextInLinkedIn(correctedText) {
   return tryLinkedInReplacementMethods(activeComposer, correctedText, selection);
 }
 function tryLinkedInReplacementMethods(composer, correctedText, selection) {
+  // Try the most reliable method first: execCommand insertText
+  if (tryMethod0_ExecCommandInsert(composer, correctedText, selection)) {
+    console.log("LinkedIn replacement successful with Method 0 (execCommand)");
+    return true;
+  }
   if (tryMethod1_DirectManipulation(composer, correctedText, selection)) {
     console.log("LinkedIn replacement successful with Method 1");
     return true;
@@ -254,6 +313,44 @@ function tryLinkedInReplacementMethods(composer, correctedText, selection) {
   }
   console.log("All LinkedIn replacement methods failed");
   return false;
+}
+function tryMethod0_ExecCommandInsert(composer, correctedText, selection) {
+  try {
+    composer.focus();
+
+    // If there's a selection, use it; otherwise select all content
+    if (!selection || selection.isCollapsed || selection.rangeCount === 0) {
+      // Select all content in the composer
+      const range = document.createRange();
+      range.selectNodeContents(composer);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+
+    // Use execCommand insertText - this is the most compatible with React
+    const success = document.execCommand('insertText', false, correctedText);
+
+    if (success) {
+      // Trigger additional events for React state sync
+      triggerLinkedInEvents(composer, correctedText);
+
+      // Move cursor to end
+      const newRange = document.createRange();
+      newRange.selectNodeContents(composer);
+      newRange.collapse(false);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(newRange);
+
+      console.log("Method 0 (execCommand insertText) succeeded");
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.log("Method 0 failed:", error);
+    return false;
+  }
 }
 function tryMethod1_DirectManipulation(composer, correctedText, selection) {
   try {
@@ -372,15 +469,22 @@ function tryMethod4_SimulateTyping(composer, correctedText) {
   }
 }
 function triggerLinkedInEvents(element, text) {
+  // Create a proper InputEvent that React can detect
+  const inputEvent = new InputEvent('input', {
+    bubbles: true,
+    cancelable: true,
+    inputType: 'insertText',
+    data: text
+  });
+
+  // Trigger events in the correct order for React
   const events = [
-    new Event('input', { bubbles: true }),
+    new Event('beforeinput', { bubbles: true, cancelable: true }),
+    inputEvent,
     new Event('change', { bubbles: true }),
-    new CompositionEvent('compositionstart', { bubbles: true }),
     new CompositionEvent('compositionend', { bubbles: true, data: text }),
-    new KeyboardEvent('keyup', { bubbles: true }),
-    new Event('blur', { bubbles: true }),
-    new Event('focus', { bubbles: true })
   ];
+
   events.forEach(event => {
     try {
       element.dispatchEvent(event);
@@ -388,10 +492,53 @@ function triggerLinkedInEvents(element, text) {
       console.log("Error dispatching event:", error);
     }
   });
+
+  // Also dispatch on parent elements (LinkedIn sometimes listens there)
+  let parent = element.parentElement;
+  for (let i = 0; i < 3 && parent; i++) {
+    try {
+      parent.dispatchEvent(new Event('input', { bubbles: true }));
+      parent.dispatchEvent(new Event('change', { bubbles: true }));
+    } catch (e) {}
+    parent = parent.parentElement;
+  }
+
+  // Blur and refocus to trigger validation
   element.blur();
   setTimeout(() => {
     element.focus();
-  }, 50);
+
+    // Dispatch input events with different configurations
+    element.dispatchEvent(new Event('input', { bubbles: true }));
+    element.dispatchEvent(new InputEvent('input', {
+      bubbles: true,
+      cancelable: true,
+      inputType: 'insertText',
+      data: text
+    }));
+
+    // Try to find and trigger the form
+    const form = element.closest('form');
+    if (form) {
+      form.dispatchEvent(new Event('change', { bubbles: true }));
+      form.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    // Find the message container and dispatch events there too
+    const messageContainer = element.closest('[class*="msg-form"]') ||
+                             element.closest('[class*="message"]') ||
+                             element.closest('[data-artdeco-is-focused]');
+    if (messageContainer) {
+      messageContainer.dispatchEvent(new Event('input', { bubbles: true }));
+      messageContainer.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  }, 100);
+
+  // Additional delayed trigger
+  setTimeout(() => {
+    element.focus();
+    element.dispatchEvent(new Event('input', { bubbles: true }));
+  }, 200);
 }
 function replaceTextInEditor(correctedText) {
   const selection = window.getSelection();
@@ -566,6 +713,10 @@ chrome.runtime.onMessage.addListener((request) => {
   } 
   else if (request.action === "showError") {
     removeLoadingIndicator();
+    // Show error message as a toast notification
+    if (request.message) {
+      showErrorNotification(request.message);
+    }
   }
 });
 function setupGmailIntegration() {
