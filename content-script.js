@@ -215,7 +215,7 @@ function replaceTextInFacebook(correctedText) {
     return false;
   }
 }
-function replaceTextInLinkedIn(correctedText) {
+function replaceTextInLinkedIn(correctedText, originalText) {
   console.log("Attempting LinkedIn-specific text replacement");
   const selection = window.getSelection();
   let activeComposer = null;
@@ -224,7 +224,11 @@ function replaceTextInLinkedIn(correctedText) {
     const selectionContainer = range.commonAncestorContainer;
     let element = selectionContainer.nodeType === Node.TEXT_NODE ? selectionContainer.parentElement : selectionContainer;
     while (element && element !== document.body) {
-      if (element.contentEditable === 'true' || element.getAttribute('contenteditable') === 'true') {
+      // Check for standard contenteditable OR LinkedIn's custom attribute
+      const isContentEditable = element.contentEditable === 'true' ||
+                                 element.getAttribute('contenteditable') === 'true' ||
+                                 element.getAttribute('data-test-ql-editor-contenteditable') === 'true';
+      if (isContentEditable) {
         const isLinkedInEditor = element.matches([
           'div[data-placeholder*="message"]',
           'div[data-placeholder*="Message"]',
@@ -233,12 +237,20 @@ function replaceTextInLinkedIn(correctedText) {
           'div[data-test-id*="message"]',
           'div[aria-label*="message"]',
           'div[aria-label*="Message"]',
-          'div[data-placeholder*="What do you want to talk about?"]',
+          'div[data-placeholder*="What do you want to talk about"]',
           'div[data-placeholder*="Share your thoughts"]',
           'div[data-placeholder*="Start a post"]',
-          'div[aria-label*="Text editor for creating content"]',
+          'div[data-placeholder*="write with AI"]',
+          'div[aria-label*="Text editor"]',
           'div[aria-label*="Rich text editor"]',
-          'div[class*="ql-editor"]'
+          'div[aria-label*="post"]',
+          'div[aria-label*="Post"]',
+          'div[data-test-ql-editor-contenteditable="true"]',
+          '.ql-editor',
+          'div[class*="ql-editor"]',
+          'div[class*="editor-content"]',
+          'div[class*="share-box"]',
+          'div[class*="share-creation"]'
         ].join(','));
         if (isLinkedInEditor) {
           activeComposer = element;
@@ -254,6 +266,8 @@ function replaceTextInLinkedIn(correctedText) {
       'div[data-placeholder*="Message"]',
       'div[role="textbox"]',
       'div[contenteditable="true"]',
+      'div[data-test-ql-editor-contenteditable="true"]',
+      '.ql-editor',
       'div[data-test-id="compose-message-input"]',
       'div[data-test-id="message-composer-input"]',
       'div[data-test-id="messaging-compose-input"]',
@@ -264,16 +278,22 @@ function replaceTextInLinkedIn(correctedText) {
       'div[data-control-name="messaging_compose"]',
       'div[data-placeholder*="Write a message"]',
       'div[data-placeholder*="write a message"]',
-      'div[data-placeholder*="What do you want to talk about?"]',
+      'div[data-placeholder*="What do you want to talk about"]',
       'div[data-placeholder*="Share your thoughts"]',
       'div[data-placeholder*="Start a post"]',
-      'div[aria-label*="Text editor for creating content"]',
+      'div[data-placeholder*="write with AI"]',
+      'div[aria-label*="Text editor"]',
       'div[aria-label*="Rich text editor"]',
+      'div[aria-label*="post"]',
+      'div[aria-label*="Post"]',
       'div[data-test-id="post-composer-input"]',
       'div[data-test-id="feed-composer-input"]',
       'div[data-test-id="share-box-input"]',
       'div[class*="ql-editor"]',
-      'div[class*="share-creation-state"]'
+      'div[class*="share-creation-state"]',
+      'div[class*="editor-content"]',
+      'div[class*="share-box"] div[contenteditable="true"]',
+      'div[class*="share-creation"] div[contenteditable="true"]'
     ].join(','));
     for (const composer of allComposers) {
       if (composer === document.activeElement || composer.contains(document.activeElement)) {
@@ -287,11 +307,11 @@ function replaceTextInLinkedIn(correctedText) {
     return false;
   }
   console.log("Found LinkedIn composer:", activeComposer);
-  return tryLinkedInReplacementMethods(activeComposer, correctedText, selection);
+  return tryLinkedInReplacementMethods(activeComposer, correctedText, selection, originalText);
 }
-function tryLinkedInReplacementMethods(composer, correctedText, selection) {
+function tryLinkedInReplacementMethods(composer, correctedText, selection, originalText) {
   // Try the most reliable method first: execCommand insertText
-  if (tryMethod0_ExecCommandInsert(composer, correctedText, selection)) {
+  if (tryMethod0_ExecCommandInsert(composer, correctedText, selection, originalText)) {
     console.log("LinkedIn replacement successful with Method 0 (execCommand)");
     return true;
   }
@@ -314,21 +334,62 @@ function tryLinkedInReplacementMethods(composer, correctedText, selection) {
   console.log("All LinkedIn replacement methods failed");
   return false;
 }
-function tryMethod0_ExecCommandInsert(composer, correctedText, selection) {
+function findAndSelectText(container, searchText) {
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+  let fullText = '';
+  const textNodes = [];
+  while (walker.nextNode()) {
+    textNodes.push({
+      node: walker.currentNode,
+      start: fullText.length
+    });
+    fullText += walker.currentNode.textContent;
+  }
+  const index = fullText.indexOf(searchText);
+  if (index === -1) return false;
+  const endIndex = index + searchText.length;
+  let startNode, startOffset, endNode, endOffset;
+  for (const entry of textNodes) {
+    const nodeEnd = entry.start + entry.node.textContent.length;
+    if (!startNode && nodeEnd > index) {
+      startNode = entry.node;
+      startOffset = index - entry.start;
+    }
+    if (nodeEnd >= endIndex) {
+      endNode = entry.node;
+      endOffset = endIndex - entry.start;
+      break;
+    }
+  }
+  if (!startNode || !endNode) return false;
+  const range = document.createRange();
+  range.setStart(startNode, startOffset);
+  range.setEnd(endNode, endOffset);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+  return true;
+}
+function tryMethod0_ExecCommandInsert(composer, correctedText, selection, originalText) {
   try {
     composer.focus();
 
-    // If there's a selection, use it; otherwise select all content
+    // If there's a selection, use it; otherwise find the original text
     if (!selection || selection.isCollapsed || selection.rangeCount === 0) {
-      // Select all content in the composer
-      const range = document.createRange();
-      range.selectNodeContents(composer);
-      const sel = window.getSelection();
-      sel.removeAllRanges();
-      sel.addRange(range);
+      // Try to find and select just the original text in the composer
+      if (originalText && findAndSelectText(composer, originalText)) {
+        console.log("Found and selected original text in composer");
+      } else {
+        // Last resort: select all content in the composer
+        const range = document.createRange();
+        range.selectNodeContents(composer);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
     }
 
-    // Use execCommand insertText - this is the most compatible with React
+    // Use execCommand insertText - this is the most compatible with Quill/React
     const success = document.execCommand('insertText', false, correctedText);
 
     if (success) {
@@ -540,19 +601,19 @@ function triggerLinkedInEvents(element, text) {
     element.dispatchEvent(new Event('input', { bubbles: true }));
   }, 200);
 }
-function replaceTextInEditor(correctedText) {
+function replaceTextInEditor(correctedText, originalText) {
   const selection = window.getSelection();
   let selectionRect = null;
   if (selection.rangeCount > 0) {
     selectionRect = selection.getRangeAt(0).getBoundingClientRect();
   }
-  const isOutlook = window.location.hostname.includes('outlook.office.com') || 
+  const isOutlook = window.location.hostname.includes('outlook.office.com') ||
                    window.location.hostname.includes('outlook.live.com');
   const isSlack = window.location.hostname === 'app.slack.com';
   const isLinkedIn = window.location.hostname === 'www.linkedin.com';
   const isFacebook = window.location.hostname.includes('facebook.com') || window.location.hostname.includes('messenger.com');
   if (isLinkedIn) {
-    const result = replaceTextInLinkedIn(correctedText);
+    const result = replaceTextInLinkedIn(correctedText, originalText);
     if (result) {
       console.log("LinkedIn text replacement successful");
       return true;
@@ -706,7 +767,7 @@ chrome.runtime.onMessage.addListener((request) => {
   else if (request.action === "replaceText") {
     console.log("Received corrected text");
     removeLoadingIndicator();
-    const success = replaceTextInEditor(request.correctedText);
+    const success = replaceTextInEditor(request.correctedText, request.originalText);
     if (request.originalText) {
       trackTextReplacement(request.originalText, request.correctedText, success);
     }
@@ -775,6 +836,8 @@ function setupLinkedInIntegration() {
       'div[data-placeholder*="Message"]',
       'div[role="textbox"]',
       'div[contenteditable="true"]',
+      'div[data-test-ql-editor-contenteditable="true"]',
+      '.ql-editor',
       'div[data-test-id="compose-message-input"]',
       'div[data-test-id="message-composer-input"]',
       'div[data-test-id="messaging-compose-input"]',
@@ -785,16 +848,22 @@ function setupLinkedInIntegration() {
       'div[data-control-name="messaging_compose"]',
       'div[data-placeholder*="Write a message"]',
       'div[data-placeholder*="write a message"]',
-      'div[data-placeholder*="What do you want to talk about?"]',
+      'div[data-placeholder*="What do you want to talk about"]',
       'div[data-placeholder*="Share your thoughts"]',
       'div[data-placeholder*="Start a post"]',
-      'div[aria-label*="Text editor for creating content"]',
+      'div[data-placeholder*="write with AI"]',
+      'div[aria-label*="Text editor"]',
       'div[aria-label*="Rich text editor"]',
+      'div[aria-label*="post"]',
+      'div[aria-label*="Post"]',
       'div[data-test-id="post-composer-input"]',
       'div[data-test-id="feed-composer-input"]',
       'div[data-test-id="share-box-input"]',
       'div[class*="ql-editor"]',
-      'div[class*="share-creation-state"]'
+      'div[class*="share-creation-state"]',
+      'div[class*="editor-content"]',
+      'div[class*="share-box"] div[contenteditable="true"]',
+      'div[class*="share-creation"] div[contenteditable="true"]'
     ].join(','));
     messageComposers.forEach(composer => {
       if (!composer.hasAttribute('data-grammar-fix-setup')) {
@@ -841,12 +910,15 @@ function debugLinkedInIntegration() {
     'div[data-placeholder*="Message"]',
     'div[role="textbox"]',
     'div[contenteditable="true"]',
+    'div[data-test-ql-editor-contenteditable="true"]',
+    '.ql-editor',
     'div[data-test-id="compose-message-input"]',
     'div[data-test-id="message-composer-input"]',
     'div[data-test-id="messaging-compose-input"]',
     'div[data-test-id="compose-input"]',
     'div[aria-label*="message"]',
     'div[aria-label*="Message"]',
+    'div[aria-label*="Text editor"]',
     'div[data-control-name="compose_message"]',
     'div[data-control-name="messaging_compose"]'
   ];

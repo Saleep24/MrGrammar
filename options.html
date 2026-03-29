@@ -15,95 +15,20 @@
           <div class="logo-icon"></div>
           <h1 class="options-title">MrGrammar Settings</h1>
         </div>
-        <p class="header-subtitle">Configure your AI-powered grammar assistant</p>
+        <p class="header-subtitle">Free AI-powered grammar assistant</p>
       </div>
     </header>
 
     <!-- Main Content -->
     <main class="options-main">
-      <!-- API Configuration Section -->
+      <!-- Service Status Section -->
       <section class="config-section">
         <div class="section-header">
-          <h2 class="section-title">API Configuration</h2>
-          <p class="section-description">Connect your OpenAI API to enable grammar correction</p>
-        </div>
-
-        <div class="form-group">
-          <label for="api-key" class="form-label">
-            <span class="label-text">OpenAI API Key</span>
-            <span class="label-required">*</span>
-          </label>
-          <div class="input-wrapper">
-            <input 
-              type="password" 
-              id="api-key" 
-              class="form-input" 
-              placeholder="sk-..."
-              autocomplete="off"
-            >
-            <button type="button" class="input-toggle" id="toggle-api-key" title="Show/Hide API Key">
-              <svg class="toggle-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                <circle cx="12" cy="12" r="3"></circle>
-              </svg>
-            </button>
-          </div>
-          <p class="form-help">
-            Get your API key from 
-            <a href="https://platform.openai.com/api-keys" target="_blank" class="link">
-              platform.openai.com/api-keys
-            </a>
-          </p>
-        </div>
-
-        <div class="form-group">
-          <label for="model" class="form-label">AI Model</label>
-          <select id="model" class="form-select">
-            <option value="gpt-3.5-turbo">GPT-3.5 Turbo - Fast & Economical</option>
-            <option value="gpt-4o-mini">GPT-4o Mini - Recommended</option>
-            <option value="gpt-4">GPT-4 - Premium Quality</option>
-            <option value="gpt-4o">GPT-4o - Latest & Best</option>
-          </select>
-          
-          <div class="model-comparison">
-            <div class="model-card" data-model="gpt-3.5-turbo">
-              <div class="model-header">
-                <h4 class="model-name">GPT-3.5 Turbo</h4>
-                <span class="model-badge model-badge-economy">Economy</span>
-              </div>
-              <p class="model-description">Good for basic grammar fixes. Most economical option.</p>
-            </div>
-            
-            <div class="model-card model-card-recommended" data-model="gpt-4o-mini">
-              <div class="model-header">
-                <h4 class="model-name">GPT-4o Mini</h4>
-                <span class="model-badge model-badge-recommended">Recommended</span>
-              </div>
-              <p class="model-description">Better quality than 3.5 at reasonable cost.</p>
-            </div>
-            
-            <div class="model-card" data-model="gpt-4">
-              <div class="model-header">
-                <h4 class="model-name">GPT-4</h4>
-                <span class="model-badge model-badge-premium">Premium</span>
-              </div>
-              <p class="model-description">Excellent for complex text with nuanced grammar.</p>
-            </div>
-            
-            <div class="model-card" data-model="gpt-4o">
-              <div class="model-header">
-                <h4 class="model-name">GPT-4o</h4>
-                <span class="model-badge model-badge-latest">Latest</span>
-              </div>
-              <p class="model-description">Latest model with the best quality for advanced corrections.</p>
-            </div>
-          </div>
+          <h2 class="section-title">Service Status</h2>
+          <p class="section-description">MrGrammar is free — no API key needed</p>
         </div>
 
         <div class="form-actions">
-          <button type="button" id="save" class="btn btn-primary">
-            <span class="btn-text">Save Settings</span>
-          </button>
           <button type="button" id="test-connection" class="btn btn-secondary">
             <span class="btn-text">Test Connection</span>
           </button>
@@ -171,7 +96,7 @@
               <p class="stat-label">Total Corrections</p>
             </div>
           </div>
-          
+
           <div class="stat-card">
             <div class="stat-content">
               <h3 class="stat-value" id="words-corrected">0</h3>
@@ -192,7 +117,7 @@
     <footer class="options-footer">
       <div class="footer-content">
         <p class="footer-text">
-          MrGrammar v2.0 - Powered by OpenAI API
+          MrGrammar v3.0 - Powered by Gemini AI
         </p>
         <div class="footer-links">
           <a href="https://github.com/Saleep24" target="_blank" class="footer-link">GitHub</a>
@@ -204,4 +129,4 @@
 
   <script src="options.js"></script>
 </body>
-</html> 
+</html>
