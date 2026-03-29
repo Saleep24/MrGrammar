@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', async () => {
   initializePopup();
-  await checkApiStatus();
+  await checkServiceStatus();
 });
 function initializePopup() {
   const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
@@ -25,45 +25,26 @@ function addInteractiveEffects() {
     });
   });
 }
-async function checkApiStatus() {
+async function checkServiceStatus() {
   const statusText = document.getElementById('api-status-text');
   const statusDot = document.getElementById('api-status-indicator');
   const modelBadge = document.getElementById('model-badge');
   try {
-    const { openaiApiKey, openaiModel } = await chrome.storage.sync.get(['openaiApiKey', 'openaiModel']);
-    if (!openaiApiKey) {
-      setStatusDisconnected('API key not set');
-      return;
-    }
-    const modelName = getModelDisplayName(openaiModel || 'gpt-4o-mini');
-    const response = await fetch('https://api.openai.com/v1/models', {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${openaiApiKey}`
-      }
+    const response = await fetch('https://proxy-khaki-eight-20.vercel.app/api/grammar', {
+      method: 'OPTIONS'
     });
     if (response.ok) {
-      setStatusConnected(modelName);
-      showModelInfo(modelName);
+      setStatusConnected();
+      showModelInfo('Gemini 2.5');
     } else {
-      const error = await response.json();
-      setStatusDisconnected(error.error?.message || 'Connection error');
+      setStatusDisconnected('Service unavailable');
     }
   } catch (error) {
     setStatusDisconnected('Connection error');
-    console.error('API status check error:', error);
+    console.error('Service status check error:', error);
   }
 }
-function getModelDisplayName(modelId) {
-  const modelNames = {
-    'gpt-3.5-turbo': 'GPT-3.5 Turbo',
-    'gpt-4o-mini': 'GPT-4o Mini',
-    'gpt-4': 'GPT-4',
-    'gpt-4o': 'GPT-4o'
-  };
-  return modelNames[modelId] || modelId;
-}
-function setStatusConnected(modelName) {
+function setStatusConnected() {
   const statusText = document.getElementById('api-status-text');
   const statusDot = document.getElementById('api-status-indicator');
   if (statusText) statusText.textContent = 'Connected';
@@ -78,17 +59,7 @@ function setStatusDisconnected(message) {
 function showModelInfo(modelName) {
   const modelBadge = document.getElementById('model-badge');
   if (modelBadge) {
-    const shortModelName = getShortModelName(modelName);
-    modelBadge.textContent = shortModelName;
+    modelBadge.textContent = modelName;
     modelBadge.style.display = 'inline';
   }
-}
-function getShortModelName(modelName) {
-  const shortNames = {
-    'GPT-3.5 Turbo': 'GPT-3.5',
-    'GPT-4o Mini': 'GPT-4o Mini',
-    'GPT-4': 'GPT-4',
-    'GPT-4o': 'GPT-4o'
-  };
-  return shortNames[modelName] || modelName;
 }

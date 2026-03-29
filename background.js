@@ -13,26 +13,35 @@ chrome.runtime.onInstalled.addListener(() => {
   });
   chrome.commands.onCommand.addListener(async (command) => {
     if (command === "fix-grammar") {
-      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (tabs.length === 0) return;
-      const activeTab = tabs[0];
-      const results = await chrome.scripting.executeScript({
-        target: { tabId: activeTab.id },
-        function: () => window.getSelection().toString()
-      });
-      const selectedText = results[0].result;
-      if (!selectedText) {
+      try {
+        const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (tabs.length === 0) return;
+        const activeTab = tabs[0];
+        let selectedText = '';
         try {
-          await chrome.tabs.sendMessage(activeTab.id, {
-            action: "showError",
-            message: "Please select some text before using the keyboard shortcut."
+          const results = await chrome.scripting.executeScript({
+            target: { tabId: activeTab.id },
+            function: () => window.getSelection().toString()
           });
+          selectedText = (results && results[0] && results[0].result) || '';
         } catch (e) {
-          console.log("Could not show error message - content script not available");
+          console.error("Failed to get selection via executeScript:", e);
         }
-        return;
+        if (!selectedText) {
+          try {
+            await chrome.tabs.sendMessage(activeTab.id, {
+              action: "showError",
+              message: "Please select some text before using the keyboard shortcut."
+            });
+          } catch (e) {
+            console.log("Could not show error message - content script not available");
+          }
+          return;
+        }
+        processSelectedText(selectedText, activeTab.id);
+      } catch (e) {
+        console.error("Keyboard shortcut handler error:", e);
       }
-      processSelectedText(selectedText, activeTab.id);
     }
   });
   async function processSelectedText(text, tabId) {
@@ -96,46 +105,246 @@ chrome.runtime.onInstalled.addListener(() => {
         console.log("Could not show loading indicator, continuing anyway");
       }
       try {
-        const correctedText = await fixGrammarWithOpenAI(text);
-        console.log("Corrected text:", correctedText); 
+        const correctedText = await fixGrammarWithGemini(text);
+        console.log("Corrected text:", correctedText);
         await trackGrammarCorrection(text, correctedText, true);
-        try {
-          chrome.tabs.sendMessage(tabId, {
-            action: "replaceText",
-            originalText: text,
-            correctedText: correctedText
-          }, function(response) {
-            if (chrome.runtime.lastError) {
-              console.log("Note: Message delivery to content script not confirmed, this is normal for some websites");
-              if (isGmail) {
-                console.log("Attempting alternative text insertion for Gmail");
-              }
-              if (isSlack) {
-                console.log("Attempting alternative text insertion for Slack");
-              }
-              if (isLinkedIn) {
-                console.log("Attempting alternative text insertion for LinkedIn");
-              }
+
+        if (isLinkedIn) {
+          console.log("Using direct injection for LinkedIn");
+          let directSuccess = false;
+          try {
+            const results = await chrome.scripting.executeScript({
+              target: { tabId: tabId },
+              world: 'MAIN',
+              func: (newText, oldText) => {
+                try {
+                  // Remove loading indicator
+                  const indicator = document.getElementById('mr-grammar-loading');
+                  if (indicator) indicator.remove();
+
+                  const sel = window.getSelection();
+
+                  // Helper: find contenteditable ancestor of a node
+                  function findEditor(node) {
+                    if (!node) return null;
+                    if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+                    while (node && node !== document.body) {
+                      if (node.isContentEditable || node.getAttribute('contenteditable') === 'true') return node;
+                      node = node.parentElement;
+                    }
+                    return null;
+                  }
+
+                  // Helper: walk text nodes and select a substring
+                  function selectText(container, text) {
+                    const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+                    let concat = '';
+                    const nodes = [];
+                    while (walker.nextNode()) {
+                      nodes.push({ n: walker.currentNode, s: concat.length });
+                      concat += walker.currentNode.textContent;
+                    }
+                    const idx = concat.indexOf(text);
+                    if (idx === -1) return false;
+                    const endIdx = idx + text.length;
+                    let sn, so, en, eo;
+                    for (const t of nodes) {
+                      const ne = t.s + t.n.textContent.length;
+                      if (!sn && ne > idx) { sn = t.n; so = idx - t.s; }
+                      if (ne >= endIdx) { en = t.n; eo = endIdx - t.s; break; }
+                    }
+                    if (!sn || !en) return false;
+                    const range = document.createRange();
+                    range.setStart(sn, so);
+                    range.setEnd(en, eo);
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                    return true;
+                  }
+
+                  // Helper: check if editor contains the new text
+                  function hasNewText(editor) {
+                    const content = (editor.textContent || '');
+                    const sample = newText.substring(0, Math.min(40, newText.length));
+                    return content.includes(sample);
+                  }
+
+                  // Step 1: Find the editor
+                  let editor = null;
+                  let hasSelection = sel && sel.rangeCount > 0 && !sel.isCollapsed;
+
+                  if (hasSelection) {
+                    editor = findEditor(sel.getRangeAt(0).commonAncestorContainer);
+                  }
+
+                  if (!editor) {
+                    const candidates = document.querySelectorAll(
+                      'div[contenteditable="true"], .ql-editor, div[role="textbox"]'
+                    );
+                    for (const c of candidates) {
+                      const r = c.getBoundingClientRect();
+                      if (r.width === 0 || r.height === 0) continue;
+                      if ((c.textContent || '').includes(oldText)) {
+                        editor = c;
+                        break;
+                      }
+                    }
+                  }
+
+                  if (!editor) return { success: false, error: 'No editor found' };
+                  console.log('MrGrammar: Found editor', editor.className, editor.tagName);
+
+                  // Step 2: Focus and ensure selection
+                  editor.focus();
+                  if (!hasSelection) {
+                    hasSelection = selectText(editor, oldText);
+                  }
+                  if (!hasSelection) return { success: false, error: 'Could not select text' };
+
+                  // Step 3: Try multiple replacement methods
+
+                  // Method A: execCommand insertText (works with Quill, basic contenteditable)
+                  {
+                    const ok = document.execCommand('insertText', false, newText);
+                    if (ok && hasNewText(editor)) {
+                      return { success: true, method: 'execCommand-insertText' };
+                    }
+                    // If execCommand claimed success but text isn't there, re-select for next attempt
+                    if (!hasNewText(editor) && (editor.textContent || '').includes(oldText)) {
+                      selectText(editor, oldText);
+                    }
+                  }
+
+                  // Method B: Synthetic paste via ClipboardEvent (works with many modern editors)
+                  {
+                    if (sel.isCollapsed && (editor.textContent || '').includes(oldText)) {
+                      selectText(editor, oldText);
+                    }
+                    if (sel.rangeCount > 0 && !sel.isCollapsed) {
+                      const dt = new DataTransfer();
+                      dt.setData('text/plain', newText);
+                      dt.setData('text/html', newText.replace(/\n/g, '<br>'));
+                      editor.dispatchEvent(new ClipboardEvent('paste', {
+                        clipboardData: dt, bubbles: true, cancelable: true
+                      }));
+                      if (hasNewText(editor)) {
+                        return { success: true, method: 'paste-event' };
+                      }
+                    }
+                  }
+
+                  // Method C: beforeinput with insertText (works with Lexical/ProseMirror editors)
+                  {
+                    if (sel.isCollapsed && (editor.textContent || '').includes(oldText)) {
+                      selectText(editor, oldText);
+                    }
+                    if (sel.rangeCount > 0 && !sel.isCollapsed) {
+                      editor.dispatchEvent(new InputEvent('beforeinput', {
+                        inputType: 'insertText', data: newText,
+                        bubbles: true, cancelable: true, composed: true
+                      }));
+                      editor.dispatchEvent(new InputEvent('input', {
+                        inputType: 'insertText', data: newText, bubbles: true
+                      }));
+                      if (hasNewText(editor)) {
+                        return { success: true, method: 'beforeinput-insertText' };
+                      }
+                    }
+                  }
+
+                  // Method D: beforeinput with insertFromPaste (another modern editor pattern)
+                  {
+                    if (sel.isCollapsed && (editor.textContent || '').includes(oldText)) {
+                      selectText(editor, oldText);
+                    }
+                    if (sel.rangeCount > 0 && !sel.isCollapsed) {
+                      const dt = new DataTransfer();
+                      dt.setData('text/plain', newText);
+                      editor.dispatchEvent(new InputEvent('beforeinput', {
+                        inputType: 'insertFromPaste', data: null, dataTransfer: dt,
+                        bubbles: true, cancelable: true, composed: true
+                      }));
+                      editor.dispatchEvent(new InputEvent('input', {
+                        inputType: 'insertFromPaste', bubbles: true
+                      }));
+                      if (hasNewText(editor)) {
+                        return { success: true, method: 'beforeinput-paste' };
+                      }
+                    }
+                  }
+
+                  // Method E: Direct DOM replacement (last resort — may desync editor state)
+                  {
+                    if (sel.isCollapsed && (editor.textContent || '').includes(oldText)) {
+                      selectText(editor, oldText);
+                    }
+                    if (sel.rangeCount > 0 && !sel.isCollapsed) {
+                      const range = sel.getRangeAt(0);
+                      range.deleteContents();
+                      range.insertNode(document.createTextNode(newText));
+                      // Collapse selection to end of inserted text
+                      sel.collapseToEnd();
+
+                      // Trigger events so editor frameworks pick up the change
+                      editor.dispatchEvent(new InputEvent('input', {
+                        inputType: 'insertText', data: newText, bubbles: true
+                      }));
+                      editor.dispatchEvent(new Event('change', { bubbles: true }));
+                      editor.dispatchEvent(new CompositionEvent('compositionend', {
+                        bubbles: true, data: newText
+                      }));
+
+                      if (hasNewText(editor)) {
+                        return { success: true, method: 'direct-dom' };
+                      }
+                    }
+                  }
+
+                  return { success: false, error: 'All 5 methods failed' };
+                } catch (e) {
+                  return { success: false, error: e.message };
+                }
+              },
+              args: [correctedText, text]
+            });
+            directSuccess = results && results[0] && results[0].result && results[0].result.success;
+            console.log("LinkedIn direct injection result:", results && results[0] && results[0].result);
+          } catch (e) {
+            console.error("LinkedIn direct injection failed:", e);
+          }
+
+          // Fallback to content script message passing
+          if (!directSuccess) {
+            console.log("Direct injection failed, falling back to content script");
+            try {
+              chrome.tabs.sendMessage(tabId, {
+                action: "replaceText",
+                originalText: text,
+                correctedText: correctedText
+              });
+            } catch (error) {
+              console.log("Content script fallback also failed:", error);
             }
-          });
-        } catch (error) {
-          console.log("Error sending correction to page, user may need to copy manually:", error);
+          }
+        } else {
+          try {
+            chrome.tabs.sendMessage(tabId, {
+              action: "replaceText",
+              originalText: text,
+              correctedText: correctedText
+            });
+          } catch (error) {
+            console.log("Error sending correction to page:", error);
+          }
         }
       } catch (error) {
         console.error("Error in background.js:", error);
         await trackGrammarCorrection(text, null, false);
         try {
-          if (error.message.includes("API key")) {
-            await chrome.tabs.sendMessage(tabId, {
+          await chrome.tabs.sendMessage(tabId, {
               action: "showError",
-              message: "Please set your OpenAI API key in the extension options."
+              message: `Error: ${error.message || "Failed to process text. Please try again."}`
             }).catch(() => {});
-          } else {
-            await chrome.tabs.sendMessage(tabId, {
-              action: "showError",
-              message: `Error: ${error.message || "Failed to process text"}`
-            }).catch(() => {});
-          }
         } catch (msgError) {
           console.log("Could not show error message to user");
         }
@@ -144,98 +353,27 @@ chrome.runtime.onInstalled.addListener(() => {
       console.error("Error in processSelectedText:", error);
     }
   }
-  async function fixGrammarWithOpenAI(text) {
-    const { openaiApiKey, openaiModel } = await chrome.storage.sync.get(['openaiApiKey', 'openaiModel']);
-    if (!openaiApiKey) {
-      throw new Error("API key not found. Please set up your OpenAI API key in the extension options.");
-    }
-    const model = openaiModel || "gpt-4o-mini";
-    const inputTokenEstimate = Math.ceil(text.length / 4); 
-    let maxTokens;
-    let temperature;
-    if (model === "gpt-3.5-turbo") {
-      maxTokens = Math.floor(Math.min(3000, inputTokenEstimate * 1.5));
-      temperature = 0.3;
-    } else if (model === "gpt-4o-mini") {
-      maxTokens = Math.floor(Math.min(4000, inputTokenEstimate * 1.5));
-      temperature = 0.2;
-    } else if (model === "gpt-4o") {
-      maxTokens = Math.floor(Math.min(4000, inputTokenEstimate * 1.5));
-      temperature = 0.2;
-    } else { 
-      maxTokens = Math.floor(Math.min(4000, inputTokenEstimate * 1.5));
-      temperature = 0.2;
-    }
-    maxTokens = Math.max(100, Math.floor(maxTokens));
+  const PROXY_URL = "https://proxy-khaki-eight-20.vercel.app/api/grammar";
+
+  async function fixGrammarWithGemini(text) {
     try {
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      const response = await fetch(PROXY_URL, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${openaiApiKey}`
+          "Content-Type": "application/json"
         },
-        body: JSON.stringify({
-          model: model,
-          messages: [
-            {
-              role: "system",
-              content: `You are a grammar-only correction tool. Your ONLY job is to fix:
-- Spelling errors
-- Grammar errors (subject-verb agreement, tense, articles, pronouns)
-- Punctuation errors
-
-STRICT RULES:
-- DO NOT change word choice (even if a "better" word exists)
-- DO NOT restructure sentences
-- DO NOT add or remove words unless grammatically necessary
-- DO NOT change tone, formality, or style
-- DO NOT "improve" or "enhance" the writing
-- PRESERVE intentional repetition, casual language, and stylistic choices
-- If the text is already grammatically correct, return it unchanged
-
-EXAMPLES:
-Input: "I goes to the store yesterday and buyed milk"
-Output: "I went to the store yesterday and bought milk"
-
-Input: "The data shows that users prefers the new design"
-Output: "The data shows that users prefer the new design"
-
-Input: "Me and him went to the meeting"
-Output: "He and I went to the meeting"
-
-Input: "Their going to there house over they're"
-Output: "They're going to their house over there"
-
-Input: "This is really really important!!!"
-Output: "This is really really important!!!"
-(No change - repetition and exclamation marks are stylistic choices, not errors)
-
-Input: "I wanna grab some food cuz im hungry"
-Output: "I wanna grab some food cuz I'm hungry"
-(Only fixed capitalization of "I'm" - preserved casual tone and slang)
-
-Return ONLY the corrected text with no explanations, comments, or quotation marks.`
-            },
-            {
-              role: "user",
-              content: text
-            }
-          ],
-          temperature: temperature,
-          max_tokens: maxTokens
-        })
+        body: JSON.stringify({ text })
       });
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(`OpenAI API error: ${error.error?.message || response.status}`);
+        throw new Error(error.error || `Server error: ${response.status}`);
       }
       const data = await response.json();
-      console.log("OpenAI response:", data); 
-      const correctedText = data.choices?.[0]?.message?.content?.trim() || text;
-      return correctedText;
+      console.log("Gemini response:", data);
+      return data.correctedText || text;
     } catch (error) {
       console.error("API Error:", error);
-      throw error; 
+      throw error;
     }
   }
   function isGmailTab(tab) {

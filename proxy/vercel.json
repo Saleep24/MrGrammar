@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "routes": [
+    {
+      "src": "/api/grammar",
+      "methods": ["POST", "OPTIONS"],
+      "dest": "/api/grammar.js"
+    }
+  ]
+}
