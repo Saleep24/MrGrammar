@@ -1,15 +1,16 @@
 # MrGrammar Browser Extension
 
-A browser extension that fixes grammar and polishes text directly in your browser using OpenAI's API. Simply highlight text, right-click, and let AI handle the rest!
+A free browser extension that fixes grammar and polishes text directly in your browser using AI. Simply highlight text, right-click, and let AI handle the rest — no API key or setup needed!
 
 
 ## Features
+- **Free to use** — no API key or account needed.
 - **One-click grammar correction** via right-click context menu.
-- **Powered by OpenAI's latest models** (GPT-3.5, GPT-4o Mini, GPT-4, GPT-4o).
+- **Powered by Google Gemini 2.5 Flash** for fast, accurate corrections.
 - **Keyboard shortcuts** for faster text correction.
 - **Loading indicator** shows when your text is being processed.
 - **Text statistics** displaying character, word, and sentence counts.
-- **Popup UI** with quick access to options and API status.
+- **Popup UI** with quick access to options and service status.
 - Works in Gmail, Google Docs, CMS, and most editable fields.
 - **LinkedIn messaging support** with advanced state synchronization.
 - Fallback to clipboard copy for non-editable text.
@@ -58,14 +59,7 @@ If you're experiencing issues with LinkedIn messaging:
 
 ## Setup Instructions
 1. Install the extension from the Chrome Web Store or load it as an unpacked extension.
-2. Get your OpenAI API key from [platform.openai.com/api-keys](https://platform.openai.com/api-keys).
-3. Click the extension icon, then click "Options" to open the settings page.
-4. Enter your OpenAI API key and choose your preferred model:
-   - **GPT-3.5 Turbo**: Basic grammar fixes (lowest cost)
-   - **GPT-4o Mini**: Recommended — better quality at reasonable cost
-   - **GPT-4**: Premium quality for complex text
-   - **GPT-4o**: Latest model with the highest quality
-5. Save your settings.
+2. That's it — MrGrammar is free and works out of the box. No API key needed.
 
 ## Usage
 1. Highlight the text you want to correct.
@@ -85,12 +79,12 @@ You can customize these shortcuts by visiting:
 - Brave: `brave://extensions/shortcuts`
 
 ## Privacy
-- Your API key is stored securely in your browser's local storage.
-- Text is sent directly from your browser to OpenAI's API.
+- No API key or account required.
+- Text is sent to a secure proxy server and processed via Google Gemini AI.
 - The extension does not collect or store any of your text data.
 
 ## Credits
-- Powered by [OpenAI API](https://openai.com/blog/openai-api)
+- Powered by [Google Gemini AI](https://ai.google.dev/)
 - Icons from [Material Design Icons](https://material.io/resources/icons/)
 
 ## License
