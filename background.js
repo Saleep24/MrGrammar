@@ -8,7 +8,7 @@ chrome.runtime.onInstalled.addListener(() => {
   });
   chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     if (info.menuItemId === "fixGrammar" && info.selectionText) {
-      processSelectedText(info.selectionText, tab.id);
+      processSelectedText(info.selectionText, tab.id, info.frameId || 0);
     }
   });
   chrome.commands.onCommand.addListener(async (command) => {
@@ -44,13 +44,14 @@ chrome.runtime.onInstalled.addListener(() => {
       }
     }
   });
-  async function processSelectedText(text, tabId) {
+  async function processSelectedText(text, tabId, frameId = 0) {
     console.log("Text selected:", text);
     try {
       const tabs = await chrome.tabs.query({active: true, currentWindow: true});
       const isGmail = tabs.length > 0 && isGmailTab(tabs[0]);
       const isSlack = tabs.length > 0 && isSlackTab(tabs[0]);
       const isLinkedIn = tabs.length > 0 && isLinkedInTab(tabs[0]);
+      const isOutlook = tabs.length > 0 && isOutlookTab(tabs[0]);
       if (isGmail) {
         console.log("Processing Gmail content");
       }
@@ -60,35 +61,16 @@ chrome.runtime.onInstalled.addListener(() => {
       if (isLinkedIn) {
         console.log("Processing LinkedIn content");
       }
-      if (isGmail) {
-        try {
-          await chrome.scripting.executeScript({
-            target: {tabId: tabId},
-            files: ['content-script.js']
-          });
-          console.log("Content script injected into Gmail");
-        } catch (e) {
-          console.log("Content script already present or failed to inject", e);
-        }
+      if (isOutlook) {
+        console.log("Processing Outlook content");
       }
-      if (isSlack) {
+      if (isGmail || isSlack || isLinkedIn || isOutlook) {
         try {
           await chrome.scripting.executeScript({
-            target: {tabId: tabId},
+            target: {tabId: tabId, allFrames: true},
             files: ['content-script.js']
           });
-          console.log("Content script injected into Slack");
-        } catch (e) {
-          console.log("Content script already present or failed to inject", e);
-        }
-      }
-      if (isLinkedIn) {
-        try {
-          await chrome.scripting.executeScript({
-            target: {tabId: tabId},
-            files: ['content-script.js']
-          });
-          console.log("Content script injected into LinkedIn");
+          console.log("Content script injected");
         } catch (e) {
           console.log("Content script already present or failed to inject", e);
         }
@@ -109,12 +91,13 @@ chrome.runtime.onInstalled.addListener(() => {
         console.log("Corrected text:", correctedText);
         await trackGrammarCorrection(text, correctedText, true);
 
-        if (isLinkedIn) {
-          console.log("Using direct injection for LinkedIn");
+        if (isLinkedIn || isOutlook) {
+          console.log(`Using direct injection for ${isLinkedIn ? 'LinkedIn' : 'Outlook'}`);
           let directSuccess = false;
           try {
             const results = await chrome.scripting.executeScript({
-              target: { tabId: tabId },
+              // Target only the frame the selection came from (context menu frameId)
+              target: { tabId: tabId, frameIds: [frameId] },
               world: 'MAIN',
               func: (newText, oldText) => {
                 try {
@@ -124,15 +107,20 @@ chrome.runtime.onInstalled.addListener(() => {
 
                   const sel = window.getSelection();
 
-                  // Helper: find contenteditable ancestor of a node
+                  // Whitespace-insensitive compare: selectionText normalizes newlines/nbsp
+                  const flatText = (s) => (s || '').replace(/\s+/g, '');
+
+                  // Helper: find the editing host (outermost contenteditable ancestor).
+                  // isContentEditable is inherited, so return the topmost match, not the first.
                   function findEditor(node) {
                     if (!node) return null;
                     if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+                    let host = null;
                     while (node && node !== document.body) {
-                      if (node.isContentEditable || node.getAttribute('contenteditable') === 'true') return node;
+                      if (node.isContentEditable || node.getAttribute('contenteditable') === 'true') host = node;
                       node = node.parentElement;
                     }
-                    return null;
+                    return host;
                   }
 
                   // Helper: walk text nodes and select a substring
@@ -144,9 +132,22 @@ chrome.runtime.onInstalled.addListener(() => {
                       nodes.push({ n: walker.currentNode, s: concat.length });
                       concat += walker.currentNode.textContent;
                     }
-                    const idx = concat.indexOf(text);
-                    if (idx === -1) return false;
-                    const endIdx = idx + text.length;
+                    let idx = concat.indexOf(text);
+                    let endIdx = idx + text.length;
+                    if (idx === -1) {
+                      // Retry ignoring whitespace: multi-line selections never match raw concat
+                      const map = [];
+                      let stripped = '';
+                      for (let i = 0; i < concat.length; i++) {
+                        if (!/\s/.test(concat[i])) { map.push(i); stripped += concat[i]; }
+                      }
+                      const needle = flatText(text);
+                      if (!needle) return false;
+                      const sIdx = stripped.indexOf(needle);
+                      if (sIdx === -1) return false;
+                      idx = map[sIdx];
+                      endIdx = map[sIdx + needle.length - 1] + 1;
+                    }
                     let sn, so, en, eo;
                     for (const t of nodes) {
                       const ne = t.s + t.n.textContent.length;
@@ -162,11 +163,14 @@ chrome.runtime.onInstalled.addListener(() => {
                     return true;
                   }
 
-                  // Helper: check if editor contains the new text
+                  // Helper: check if editor contains the new text (whitespace-insensitive)
                   function hasNewText(editor) {
-                    const content = (editor.textContent || '');
-                    const sample = newText.substring(0, Math.min(40, newText.length));
-                    return content.includes(sample);
+                    const content = flatText(editor.textContent);
+                    const flatNew = flatText(newText);
+                    if (content.includes(flatNew)) return true;
+                    // Prefix match only counts when the old text is gone (guards no-op inserts)
+                    const sample = flatNew.substring(0, Math.min(40, flatNew.length));
+                    return content.includes(sample) && !content.includes(flatText(oldText));
                   }
 
                   // Step 1: Find the editor
@@ -184,7 +188,7 @@ chrome.runtime.onInstalled.addListener(() => {
                     for (const c of candidates) {
                       const r = c.getBoundingClientRect();
                       if (r.width === 0 || r.height === 0) continue;
-                      if ((c.textContent || '').includes(oldText)) {
+                      if (flatText(c.textContent).includes(flatText(oldText))) {
                         editor = c;
                         break;
                       }
@@ -204,20 +208,46 @@ chrome.runtime.onInstalled.addListener(() => {
                   // Step 3: Try multiple replacement methods
 
                   // Method A: execCommand insertText (works with Quill, basic contenteditable)
+                  // For Outlook: use insertHTML with captured styles to preserve font/color
                   {
-                    const ok = document.execCommand('insertText', false, newText);
+                    let ok = false;
+                    if (window.location.hostname.includes('outlook.') && sel.rangeCount > 0 && !sel.isCollapsed) {
+                      try {
+                        const range = sel.getRangeAt(0);
+                        const refNode = range.startContainer.nodeType === Node.TEXT_NODE
+                          ? range.startContainer.parentElement
+                          : range.startContainer;
+                        const cs = window.getComputedStyle(refNode);
+                        // Build the span via DOM: quoted font names ("Segoe UI") would
+                        // break a hand-concatenated style attribute; outerHTML escapes them
+                        const span = document.createElement('span');
+                        span.style.fontFamily = cs.fontFamily;
+                        span.style.fontSize = cs.fontSize;
+                        span.style.color = cs.color;
+                        newText.split('\n').forEach((line, i) => {
+                          if (i > 0) span.appendChild(document.createElement('br'));
+                          span.appendChild(document.createTextNode(line));
+                        });
+                        ok = document.execCommand('insertHTML', false, span.outerHTML);
+                      } catch (e) {
+                        console.log('MrGrammar: insertHTML failed, trying insertText', e);
+                      }
+                    }
+                    if (!ok) {
+                      ok = document.execCommand('insertText', false, newText);
+                    }
                     if (ok && hasNewText(editor)) {
-                      return { success: true, method: 'execCommand-insertText' };
+                      return { success: true, method: 'execCommand' };
                     }
                     // If execCommand claimed success but text isn't there, re-select for next attempt
-                    if (!hasNewText(editor) && (editor.textContent || '').includes(oldText)) {
+                    if (!hasNewText(editor) && flatText(editor.textContent).includes(flatText(oldText))) {
                       selectText(editor, oldText);
                     }
                   }
 
                   // Method B: Synthetic paste via ClipboardEvent (works with many modern editors)
                   {
-                    if (sel.isCollapsed && (editor.textContent || '').includes(oldText)) {
+                    if (sel.isCollapsed && flatText(editor.textContent).includes(flatText(oldText))) {
                       selectText(editor, oldText);
                     }
                     if (sel.rangeCount > 0 && !sel.isCollapsed) {
@@ -235,7 +265,7 @@ chrome.runtime.onInstalled.addListener(() => {
 
                   // Method C: beforeinput with insertText (works with Lexical/ProseMirror editors)
                   {
-                    if (sel.isCollapsed && (editor.textContent || '').includes(oldText)) {
+                    if (sel.isCollapsed && flatText(editor.textContent).includes(flatText(oldText))) {
                       selectText(editor, oldText);
                     }
                     if (sel.rangeCount > 0 && !sel.isCollapsed) {
@@ -254,7 +284,7 @@ chrome.runtime.onInstalled.addListener(() => {
 
                   // Method D: beforeinput with insertFromPaste (another modern editor pattern)
                   {
-                    if (sel.isCollapsed && (editor.textContent || '').includes(oldText)) {
+                    if (sel.isCollapsed && flatText(editor.textContent).includes(flatText(oldText))) {
                       selectText(editor, oldText);
                     }
                     if (sel.rangeCount > 0 && !sel.isCollapsed) {
@@ -273,9 +303,9 @@ chrome.runtime.onInstalled.addListener(() => {
                     }
                   }
 
-                  // Method E: Direct DOM replacement (last resort — may desync editor state)
+                  // Method E: Direct DOM replacement (last resort, may desync editor state)
                   {
-                    if (sel.isCollapsed && (editor.textContent || '').includes(oldText)) {
+                    if (sel.isCollapsed && flatText(editor.textContent).includes(flatText(oldText))) {
                       selectText(editor, oldText);
                     }
                     if (sel.rangeCount > 0 && !sel.isCollapsed) {
@@ -307,10 +337,11 @@ chrome.runtime.onInstalled.addListener(() => {
               },
               args: [correctedText, text]
             });
-            directSuccess = results && results[0] && results[0].result && results[0].result.success;
-            console.log("LinkedIn direct injection result:", results && results[0] && results[0].result);
+            const successResult = results && results.find(r => r.result && r.result.success);
+            directSuccess = !!successResult;
+            console.log("Direct injection result:", successResult ? successResult.result : (results && results[0] && results[0].result));
           } catch (e) {
-            console.error("LinkedIn direct injection failed:", e);
+            console.error("Direct injection failed:", e);
           }
 
           // Fallback to content script message passing
@@ -324,6 +355,13 @@ chrome.runtime.onInstalled.addListener(() => {
               });
             } catch (error) {
               console.log("Content script fallback also failed:", error);
+            }
+          } else {
+            // Reset the content script's loading indicator flag (MAIN world only removed the DOM node)
+            try {
+              chrome.tabs.sendMessage(tabId, { action: "stopProcessing" });
+            } catch (error) {
+              console.log("Could not send stopProcessing:", error);
             }
           }
         } else {
@@ -384,6 +422,9 @@ chrome.runtime.onInstalled.addListener(() => {
   }
   function isLinkedInTab(tab) {
     return tab && tab.url && tab.url.includes('www.linkedin.com');
+  }
+  function isOutlookTab(tab) {
+    return tab && tab.url && (tab.url.includes('outlook.office.com') || tab.url.includes('outlook.office365.com') || tab.url.includes('outlook.live.com'));
   }
   async function trackGrammarCorrection(originalText, correctedText, success) {
     try {
