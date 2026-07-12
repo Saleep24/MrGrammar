@@ -608,6 +608,7 @@ function replaceTextInEditor(correctedText, originalText) {
     selectionRect = selection.getRangeAt(0).getBoundingClientRect();
   }
   const isOutlook = window.location.hostname.includes('outlook.office.com') ||
+                   window.location.hostname.includes('outlook.office365.com') ||
                    window.location.hostname.includes('outlook.live.com');
   const isSlack = window.location.hostname === 'app.slack.com';
   const isLinkedIn = window.location.hostname === 'www.linkedin.com';
@@ -633,26 +634,92 @@ function replaceTextInEditor(correctedText, originalText) {
     }
   }
   if (isOutlook) {
-    const composeArea = document.querySelector([
-      'div[role="textbox"][aria-label="Message body"]',
-      'div[role="textbox"][aria-label="Reply body"]',
-      'div[role="textbox"][aria-label="Forward body"]'
-    ].join(','));
+    // Prefer the editor containing the live selection: the generic textbox
+    // selector alone can match the To/Cc recipient wells before the body
+    let composeArea = null;
+    if (selection.rangeCount > 0) {
+      let node = selection.getRangeAt(0).commonAncestorContainer;
+      if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+      composeArea = node ? node.closest('div[contenteditable="true"]') : null;
+    }
+    if (!composeArea) {
+      const selectors = [
+        'div[role="textbox"][aria-label="Message body"]',
+        'div[role="textbox"][aria-label="Reply body"]',
+        'div[role="textbox"][aria-label="Forward body"]',
+        'div[role="textbox"][contenteditable="true"]'
+      ];
+      for (const s of selectors) {
+        composeArea = document.querySelector(s);
+        if (composeArea) break;
+      }
+    }
     if (composeArea) {
       try {
         composeArea.focus();
-        if (selection.rangeCount > 0) {
-          const range = selection.getRangeAt(0);
-          range.deleteContents();
-          range.insertNode(document.createTextNode(correctedText));
-        } else {
-          const range = document.createRange();
-          range.selectNodeContents(composeArea);
-          range.collapse(false); 
-          range.insertNode(document.createTextNode(correctedText));
+        // Use insertHTML with captured styles to preserve font/color.
+        // Plain insertText strips inline formatting spans.
+        let ok = false;
+        if (selection.rangeCount > 0 && !selection.isCollapsed) {
+          try {
+            const range = selection.getRangeAt(0);
+            const refNode = range.startContainer.nodeType === Node.TEXT_NODE
+              ? range.startContainer.parentElement
+              : range.startContainer;
+            const cs = window.getComputedStyle(refNode);
+            // Build the span via DOM: quoted font names ("Segoe UI") would
+            // break a hand-concatenated style attribute; outerHTML escapes them
+            const span = document.createElement('span');
+            span.style.fontFamily = cs.fontFamily;
+            span.style.fontSize = cs.fontSize;
+            span.style.color = cs.color;
+            correctedText.split('\n').forEach((line, i) => {
+              if (i > 0) span.appendChild(document.createElement('br'));
+              span.appendChild(document.createTextNode(line));
+            });
+            ok = document.execCommand('insertHTML', false, span.outerHTML);
+          } catch (e) {
+            console.log("Outlook insertHTML failed, trying insertText", e);
+          }
+          if (!ok) {
+            // Selection is still live: plain insertText on it (loses styling but lands correctly)
+            ok = document.execCommand('insertText', false, correctedText);
+          }
         }
-        console.log("Text inserted in Outlook compose area");
-        return true;
+        if (!ok) {
+          // Fallback: re-select original text and try insertText
+          const walker = document.createTreeWalker(composeArea, NodeFilter.SHOW_TEXT);
+          let concat = '';
+          const nodes = [];
+          while (walker.nextNode()) {
+            nodes.push({ n: walker.currentNode, s: concat.length });
+            concat += walker.currentNode.textContent;
+          }
+          const idx = concat.indexOf(originalText);
+          if (idx !== -1) {
+            const endIdx = idx + originalText.length;
+            let sn, so, en, eo;
+            for (const t of nodes) {
+              const ne = t.s + t.n.textContent.length;
+              if (!sn && ne > idx) { sn = t.n; so = idx - t.s; }
+              if (ne >= endIdx) { en = t.n; eo = endIdx - t.s; break; }
+            }
+            if (sn && en) {
+              const range = document.createRange();
+              range.setStart(sn, so);
+              range.setEnd(en, eo);
+              selection.removeAllRanges();
+              selection.addRange(range);
+              ok = document.execCommand('insertText', false, correctedText);
+            }
+          }
+        }
+        if (ok) {
+          console.log("Text inserted in Outlook compose area");
+          return true;
+        }
+        console.log("Outlook text replacement failed");
+        return false;
       } catch (error) {
         console.error("Error inserting text in Outlook compose:", error);
         return false;
@@ -794,7 +861,8 @@ function setupGmailIntegration() {
   observer.observe(document.body, { childList: true, subtree: true });
 }
 function setupOutlookIntegration() {
-  if (!window.location.hostname.includes('outlook.office.com') && 
+  if (!window.location.hostname.includes('outlook.office.com') &&
+      !window.location.hostname.includes('outlook.office365.com') &&
       !window.location.hostname.includes('outlook.live.com')) return;
   const observer = new MutationObserver(() => {
     const composeAreas = document.querySelectorAll([

@@ -51,6 +51,7 @@ chrome.runtime.onInstalled.addListener(() => {
       const isGmail = tabs.length > 0 && isGmailTab(tabs[0]);
       const isSlack = tabs.length > 0 && isSlackTab(tabs[0]);
       const isLinkedIn = tabs.length > 0 && isLinkedInTab(tabs[0]);
+      const isOutlook = tabs.length > 0 && isOutlookTab(tabs[0]);
       if (isGmail) {
         console.log("Processing Gmail content");
       }
@@ -60,35 +61,16 @@ chrome.runtime.onInstalled.addListener(() => {
       if (isLinkedIn) {
         console.log("Processing LinkedIn content");
       }
-      if (isGmail) {
-        try {
-          await chrome.scripting.executeScript({
-            target: {tabId: tabId},
-            files: ['content-script.js']
-          });
-          console.log("Content script injected into Gmail");
-        } catch (e) {
-          console.log("Content script already present or failed to inject", e);
-        }
+      if (isOutlook) {
+        console.log("Processing Outlook content");
       }
-      if (isSlack) {
+      if (isGmail || isSlack || isLinkedIn || isOutlook) {
         try {
           await chrome.scripting.executeScript({
-            target: {tabId: tabId},
+            target: {tabId: tabId, allFrames: true},
             files: ['content-script.js']
           });
-          console.log("Content script injected into Slack");
-        } catch (e) {
-          console.log("Content script already present or failed to inject", e);
-        }
-      }
-      if (isLinkedIn) {
-        try {
-          await chrome.scripting.executeScript({
-            target: {tabId: tabId},
-            files: ['content-script.js']
-          });
-          console.log("Content script injected into LinkedIn");
+          console.log("Content script injected");
         } catch (e) {
           console.log("Content script already present or failed to inject", e);
         }
@@ -109,12 +91,12 @@ chrome.runtime.onInstalled.addListener(() => {
         console.log("Corrected text:", correctedText);
         await trackGrammarCorrection(text, correctedText, true);
 
-        if (isLinkedIn) {
-          console.log("Using direct injection for LinkedIn");
+        if (isLinkedIn || isOutlook) {
+          console.log(`Using direct injection for ${isLinkedIn ? 'LinkedIn' : 'Outlook'}`);
           let directSuccess = false;
           try {
             const results = await chrome.scripting.executeScript({
-              target: { tabId: tabId },
+              target: { tabId: tabId, allFrames: true },
               world: 'MAIN',
               func: (newText, oldText) => {
                 try {
@@ -124,15 +106,22 @@ chrome.runtime.onInstalled.addListener(() => {
 
                   const sel = window.getSelection();
 
-                  // Helper: find contenteditable ancestor of a node
+                  // Runs in every frame (allFrames): subframes only act if they own the selection
+                  if (window !== window.top && !(sel && sel.rangeCount > 0 && !sel.isCollapsed)) {
+                    return { success: false, error: 'No selection in this frame' };
+                  }
+
+                  // Helper: find the editing host (outermost contenteditable ancestor).
+                  // isContentEditable is inherited, so return the topmost match, not the first.
                   function findEditor(node) {
                     if (!node) return null;
                     if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+                    let host = null;
                     while (node && node !== document.body) {
-                      if (node.isContentEditable || node.getAttribute('contenteditable') === 'true') return node;
+                      if (node.isContentEditable || node.getAttribute('contenteditable') === 'true') host = node;
                       node = node.parentElement;
                     }
-                    return null;
+                    return host;
                   }
 
                   // Helper: walk text nodes and select a substring
@@ -163,9 +152,11 @@ chrome.runtime.onInstalled.addListener(() => {
                   }
 
                   // Helper: check if editor contains the new text
+                  // Newlines become <br> in the DOM, so strip them before comparing
                   function hasNewText(editor) {
-                    const content = (editor.textContent || '');
-                    const sample = newText.substring(0, Math.min(40, newText.length));
+                    const content = (editor.textContent || '').replace(/\n/g, '');
+                    const flat = newText.replace(/\n/g, '');
+                    const sample = flat.substring(0, Math.min(40, flat.length));
                     return content.includes(sample);
                   }
 
@@ -204,10 +195,36 @@ chrome.runtime.onInstalled.addListener(() => {
                   // Step 3: Try multiple replacement methods
 
                   // Method A: execCommand insertText (works with Quill, basic contenteditable)
+                  // For Outlook: use insertHTML with captured styles to preserve font/color
                   {
-                    const ok = document.execCommand('insertText', false, newText);
+                    let ok = false;
+                    if (window.location.hostname.includes('outlook.') && sel.rangeCount > 0 && !sel.isCollapsed) {
+                      try {
+                        const range = sel.getRangeAt(0);
+                        const refNode = range.startContainer.nodeType === Node.TEXT_NODE
+                          ? range.startContainer.parentElement
+                          : range.startContainer;
+                        const cs = window.getComputedStyle(refNode);
+                        // Build the span via DOM: quoted font names ("Segoe UI") would
+                        // break a hand-concatenated style attribute; outerHTML escapes them
+                        const span = document.createElement('span');
+                        span.style.fontFamily = cs.fontFamily;
+                        span.style.fontSize = cs.fontSize;
+                        span.style.color = cs.color;
+                        newText.split('\n').forEach((line, i) => {
+                          if (i > 0) span.appendChild(document.createElement('br'));
+                          span.appendChild(document.createTextNode(line));
+                        });
+                        ok = document.execCommand('insertHTML', false, span.outerHTML);
+                      } catch (e) {
+                        console.log('MrGrammar: insertHTML failed, trying insertText', e);
+                      }
+                    }
+                    if (!ok) {
+                      ok = document.execCommand('insertText', false, newText);
+                    }
                     if (ok && hasNewText(editor)) {
-                      return { success: true, method: 'execCommand-insertText' };
+                      return { success: true, method: 'execCommand' };
                     }
                     // If execCommand claimed success but text isn't there, re-select for next attempt
                     if (!hasNewText(editor) && (editor.textContent || '').includes(oldText)) {
@@ -307,10 +324,11 @@ chrome.runtime.onInstalled.addListener(() => {
               },
               args: [correctedText, text]
             });
-            directSuccess = results && results[0] && results[0].result && results[0].result.success;
-            console.log("LinkedIn direct injection result:", results && results[0] && results[0].result);
+            directSuccess = results && results.some(r => r.result && r.result.success);
+            const successResult = results && results.find(r => r.result && r.result.success);
+            console.log("Direct injection result:", successResult ? successResult.result : (results && results[0] && results[0].result));
           } catch (e) {
-            console.error("LinkedIn direct injection failed:", e);
+            console.error("Direct injection failed:", e);
           }
 
           // Fallback to content script message passing
@@ -384,6 +402,9 @@ chrome.runtime.onInstalled.addListener(() => {
   }
   function isLinkedInTab(tab) {
     return tab && tab.url && tab.url.includes('www.linkedin.com');
+  }
+  function isOutlookTab(tab) {
+    return tab && tab.url && (tab.url.includes('outlook.office.com') || tab.url.includes('outlook.office365.com') || tab.url.includes('outlook.live.com'));
   }
   async function trackGrammarCorrection(originalText, correctedText, success) {
     try {
