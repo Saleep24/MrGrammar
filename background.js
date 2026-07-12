@@ -8,7 +8,7 @@ chrome.runtime.onInstalled.addListener(() => {
   });
   chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     if (info.menuItemId === "fixGrammar" && info.selectionText) {
-      processSelectedText(info.selectionText, tab.id);
+      processSelectedText(info.selectionText, tab.id, info.frameId || 0);
     }
   });
   chrome.commands.onCommand.addListener(async (command) => {
@@ -44,7 +44,7 @@ chrome.runtime.onInstalled.addListener(() => {
       }
     }
   });
-  async function processSelectedText(text, tabId) {
+  async function processSelectedText(text, tabId, frameId = 0) {
     console.log("Text selected:", text);
     try {
       const tabs = await chrome.tabs.query({active: true, currentWindow: true});
@@ -96,7 +96,8 @@ chrome.runtime.onInstalled.addListener(() => {
           let directSuccess = false;
           try {
             const results = await chrome.scripting.executeScript({
-              target: { tabId: tabId, allFrames: true },
+              // Target only the frame the selection came from (context menu frameId)
+              target: { tabId: tabId, frameIds: [frameId] },
               world: 'MAIN',
               func: (newText, oldText) => {
                 try {
@@ -106,10 +107,8 @@ chrome.runtime.onInstalled.addListener(() => {
 
                   const sel = window.getSelection();
 
-                  // Runs in every frame (allFrames): subframes only act if they own the selection
-                  if (window !== window.top && !(sel && sel.rangeCount > 0 && !sel.isCollapsed)) {
-                    return { success: false, error: 'No selection in this frame' };
-                  }
+                  // Whitespace-insensitive compare: selectionText normalizes newlines/nbsp
+                  const flatText = (s) => (s || '').replace(/\s+/g, '');
 
                   // Helper: find the editing host (outermost contenteditable ancestor).
                   // isContentEditable is inherited, so return the topmost match, not the first.
@@ -133,9 +132,22 @@ chrome.runtime.onInstalled.addListener(() => {
                       nodes.push({ n: walker.currentNode, s: concat.length });
                       concat += walker.currentNode.textContent;
                     }
-                    const idx = concat.indexOf(text);
-                    if (idx === -1) return false;
-                    const endIdx = idx + text.length;
+                    let idx = concat.indexOf(text);
+                    let endIdx = idx + text.length;
+                    if (idx === -1) {
+                      // Retry ignoring whitespace: multi-line selections never match raw concat
+                      const map = [];
+                      let stripped = '';
+                      for (let i = 0; i < concat.length; i++) {
+                        if (!/\s/.test(concat[i])) { map.push(i); stripped += concat[i]; }
+                      }
+                      const needle = flatText(text);
+                      if (!needle) return false;
+                      const sIdx = stripped.indexOf(needle);
+                      if (sIdx === -1) return false;
+                      idx = map[sIdx];
+                      endIdx = map[sIdx + needle.length - 1] + 1;
+                    }
                     let sn, so, en, eo;
                     for (const t of nodes) {
                       const ne = t.s + t.n.textContent.length;
@@ -151,13 +163,14 @@ chrome.runtime.onInstalled.addListener(() => {
                     return true;
                   }
 
-                  // Helper: check if editor contains the new text
-                  // Newlines become <br> in the DOM, so strip them before comparing
+                  // Helper: check if editor contains the new text (whitespace-insensitive)
                   function hasNewText(editor) {
-                    const content = (editor.textContent || '').replace(/\n/g, '');
-                    const flat = newText.replace(/\n/g, '');
-                    const sample = flat.substring(0, Math.min(40, flat.length));
-                    return content.includes(sample);
+                    const content = flatText(editor.textContent);
+                    const flatNew = flatText(newText);
+                    if (content.includes(flatNew)) return true;
+                    // Prefix match only counts when the old text is gone (guards no-op inserts)
+                    const sample = flatNew.substring(0, Math.min(40, flatNew.length));
+                    return content.includes(sample) && !content.includes(flatText(oldText));
                   }
 
                   // Step 1: Find the editor
@@ -175,7 +188,7 @@ chrome.runtime.onInstalled.addListener(() => {
                     for (const c of candidates) {
                       const r = c.getBoundingClientRect();
                       if (r.width === 0 || r.height === 0) continue;
-                      if ((c.textContent || '').includes(oldText)) {
+                      if (flatText(c.textContent).includes(flatText(oldText))) {
                         editor = c;
                         break;
                       }
@@ -227,14 +240,14 @@ chrome.runtime.onInstalled.addListener(() => {
                       return { success: true, method: 'execCommand' };
                     }
                     // If execCommand claimed success but text isn't there, re-select for next attempt
-                    if (!hasNewText(editor) && (editor.textContent || '').includes(oldText)) {
+                    if (!hasNewText(editor) && flatText(editor.textContent).includes(flatText(oldText))) {
                       selectText(editor, oldText);
                     }
                   }
 
                   // Method B: Synthetic paste via ClipboardEvent (works with many modern editors)
                   {
-                    if (sel.isCollapsed && (editor.textContent || '').includes(oldText)) {
+                    if (sel.isCollapsed && flatText(editor.textContent).includes(flatText(oldText))) {
                       selectText(editor, oldText);
                     }
                     if (sel.rangeCount > 0 && !sel.isCollapsed) {
@@ -252,7 +265,7 @@ chrome.runtime.onInstalled.addListener(() => {
 
                   // Method C: beforeinput with insertText (works with Lexical/ProseMirror editors)
                   {
-                    if (sel.isCollapsed && (editor.textContent || '').includes(oldText)) {
+                    if (sel.isCollapsed && flatText(editor.textContent).includes(flatText(oldText))) {
                       selectText(editor, oldText);
                     }
                     if (sel.rangeCount > 0 && !sel.isCollapsed) {
@@ -271,7 +284,7 @@ chrome.runtime.onInstalled.addListener(() => {
 
                   // Method D: beforeinput with insertFromPaste (another modern editor pattern)
                   {
-                    if (sel.isCollapsed && (editor.textContent || '').includes(oldText)) {
+                    if (sel.isCollapsed && flatText(editor.textContent).includes(flatText(oldText))) {
                       selectText(editor, oldText);
                     }
                     if (sel.rangeCount > 0 && !sel.isCollapsed) {
@@ -290,9 +303,9 @@ chrome.runtime.onInstalled.addListener(() => {
                     }
                   }
 
-                  // Method E: Direct DOM replacement (last resort — may desync editor state)
+                  // Method E: Direct DOM replacement (last resort, may desync editor state)
                   {
-                    if (sel.isCollapsed && (editor.textContent || '').includes(oldText)) {
+                    if (sel.isCollapsed && flatText(editor.textContent).includes(flatText(oldText))) {
                       selectText(editor, oldText);
                     }
                     if (sel.rangeCount > 0 && !sel.isCollapsed) {
@@ -324,8 +337,8 @@ chrome.runtime.onInstalled.addListener(() => {
               },
               args: [correctedText, text]
             });
-            directSuccess = results && results.some(r => r.result && r.result.success);
             const successResult = results && results.find(r => r.result && r.result.success);
+            directSuccess = !!successResult;
             console.log("Direct injection result:", successResult ? successResult.result : (results && results[0] && results[0].result));
           } catch (e) {
             console.error("Direct injection failed:", e);
@@ -342,6 +355,13 @@ chrome.runtime.onInstalled.addListener(() => {
               });
             } catch (error) {
               console.log("Content script fallback also failed:", error);
+            }
+          } else {
+            // Reset the content script's loading indicator flag (MAIN world only removed the DOM node)
+            try {
+              chrome.tabs.sendMessage(tabId, { action: "stopProcessing" });
+            } catch (error) {
+              console.log("Could not send stopProcessing:", error);
             }
           }
         } else {

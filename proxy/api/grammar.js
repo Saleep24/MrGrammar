@@ -1,4 +1,4 @@
-// Vercel Serverless Function — proxies grammar requests to AI providers
+// Vercel Serverless Function - proxies grammar requests to AI providers
 // API keys are stored as Vercel environment variables (secrets), never exposed to clients.
 // Primary: Gemini 2.5 Flash Lite | Fallback: Groq (Llama)
 
@@ -142,12 +142,14 @@ export default async function handler(req, res) {
   }
 
   // Attempt 1: Gemini
+  let emptyResponse = false;
   if (geminiKey) {
     try {
       const result = await callGemini(text, geminiKey);
       if (result) {
         return res.status(200).json({ correctedText: result, provider: "gemini" });
       }
+      emptyResponse = true;
     } catch (error) {
       console.error("Gemini failed, trying fallback:", error.message);
     }
@@ -160,9 +162,15 @@ export default async function handler(req, res) {
       if (result) {
         return res.status(200).json({ correctedText: result, provider: "groq" });
       }
+      emptyResponse = true;
     } catch (error) {
       console.error("Groq fallback also failed:", error.message);
     }
+  }
+
+  // A provider answered but had nothing to return (e.g. safety block): leave text unchanged
+  if (emptyResponse) {
+    return res.status(200).json({ correctedText: text, provider: "none" });
   }
 
   return res.status(502).json({ error: "All AI providers are currently unavailable. Please try again in a moment." });

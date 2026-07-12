@@ -345,9 +345,22 @@ function findAndSelectText(container, searchText) {
     });
     fullText += walker.currentNode.textContent;
   }
-  const index = fullText.indexOf(searchText);
-  if (index === -1) return false;
-  const endIndex = index + searchText.length;
+  let index = fullText.indexOf(searchText);
+  let endIndex = index + searchText.length;
+  if (index === -1) {
+    // Retry ignoring whitespace: multi-line selections never match raw concat
+    const map = [];
+    let stripped = '';
+    for (let i = 0; i < fullText.length; i++) {
+      if (!/\s/.test(fullText[i])) { map.push(i); stripped += fullText[i]; }
+    }
+    const needle = searchText.replace(/\s+/g, '');
+    if (!needle) return false;
+    const sIdx = stripped.indexOf(needle);
+    if (sIdx === -1) return false;
+    index = map[sIdx];
+    endIndex = map[sIdx + needle.length - 1] + 1;
+  }
   let startNode, startOffset, endNode, endOffset;
   for (const entry of textNodes) {
     const nodeEnd = entry.start + entry.node.textContent.length;
@@ -688,30 +701,8 @@ function replaceTextInEditor(correctedText, originalText) {
         }
         if (!ok) {
           // Fallback: re-select original text and try insertText
-          const walker = document.createTreeWalker(composeArea, NodeFilter.SHOW_TEXT);
-          let concat = '';
-          const nodes = [];
-          while (walker.nextNode()) {
-            nodes.push({ n: walker.currentNode, s: concat.length });
-            concat += walker.currentNode.textContent;
-          }
-          const idx = concat.indexOf(originalText);
-          if (idx !== -1) {
-            const endIdx = idx + originalText.length;
-            let sn, so, en, eo;
-            for (const t of nodes) {
-              const ne = t.s + t.n.textContent.length;
-              if (!sn && ne > idx) { sn = t.n; so = idx - t.s; }
-              if (ne >= endIdx) { en = t.n; eo = endIdx - t.s; break; }
-            }
-            if (sn && en) {
-              const range = document.createRange();
-              range.setStart(sn, so);
-              range.setEnd(en, eo);
-              selection.removeAllRanges();
-              selection.addRange(range);
-              ok = document.execCommand('insertText', false, correctedText);
-            }
+          if (findAndSelectText(composeArea, originalText)) {
+            ok = document.execCommand('insertText', false, correctedText);
           }
         }
         if (ok) {
@@ -839,6 +830,9 @@ chrome.runtime.onMessage.addListener((request) => {
       trackTextReplacement(request.originalText, request.correctedText, success);
     }
   } 
+  else if (request.action === "stopProcessing") {
+    removeLoadingIndicator();
+  }
   else if (request.action === "showError") {
     removeLoadingIndicator();
     // Show error message as a toast notification
