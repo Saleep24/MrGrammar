@@ -89,13 +89,13 @@ async function checkRateLimit(ip) {
     if (typeof perMinute !== "number") return { allowed: true };
 
     if (perMinute > RATE_LIMIT_PER_MINUTE) {
-      return { allowed: false, retryAfter: 60, error: "Too many requests. Please wait a minute and try again." };
+      return { allowed: false, retryAfter: 60, error: "Too many requests. Try again in a minute." };
     }
     if (perDay > RATE_LIMIT_PER_DAY) {
-      return { allowed: false, retryAfter: 3600, error: "Daily limit reached. Please try again tomorrow." };
+      return { allowed: false, retryAfter: 3600, error: "Daily limit reached. Try again tomorrow." };
     }
     if (global > GLOBAL_LIMIT_PER_DAY) {
-      return { allowed: false, retryAfter: 3600, error: "The service is at capacity today. Please try again tomorrow." };
+      return { allowed: false, retryAfter: 3600, error: "Service is at capacity today. Try again tomorrow." };
     }
     return { allowed: true };
   } catch (error) {

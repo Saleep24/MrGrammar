@@ -347,41 +347,39 @@ chrome.runtime.onInstalled.addListener(() => {
           // Fallback to content script message passing
           if (!directSuccess) {
             console.log("Direct injection failed, falling back to content script");
-            try {
-              chrome.tabs.sendMessage(tabId, {
-                action: "replaceText",
-                originalText: text,
-                correctedText: correctedText
-              });
-            } catch (error) {
-              console.log("Content script fallback also failed:", error);
-            }
-          } else {
-            // Reset the content script's loading indicator flag (MAIN world only removed the DOM node)
-            try {
-              chrome.tabs.sendMessage(tabId, { action: "stopProcessing" });
-            } catch (error) {
-              console.log("Could not send stopProcessing:", error);
-            }
-          }
-        } else {
-          try {
             chrome.tabs.sendMessage(tabId, {
               action: "replaceText",
               originalText: text,
               correctedText: correctedText
+            }).catch((error) => {
+              console.log("Content script fallback also failed:", error.message);
             });
-          } catch (error) {
-            console.log("Error sending correction to page:", error);
+          } else {
+            // Reset the content script's loading indicator flag (MAIN world only removed the DOM node)
+            chrome.tabs.sendMessage(tabId, { action: "stopProcessing" }).catch((error) => {
+              console.log("Could not send stopProcessing:", error.message);
+            });
           }
+        } else {
+          chrome.tabs.sendMessage(tabId, {
+            action: "replaceText",
+            originalText: text,
+            correctedText: correctedText
+          }).catch((error) => {
+            console.log("Error sending correction to page:", error.message);
+          });
         }
       } catch (error) {
-        console.error("Error in background.js:", error);
+        if (error.friendly) {
+          console.warn("Correction failed:", error.message);
+        } else {
+          console.error("Error in background.js:", error);
+        }
         await trackGrammarCorrection(text, null, false);
         try {
           await chrome.tabs.sendMessage(tabId, {
               action: "showError",
-              message: `Error: ${error.message || "Failed to process text. Please try again."}`
+              message: error.friendly ? error.message : `Error: ${error.message || "Failed to process text. Please try again."}`
             }).catch(() => {});
         } catch (msgError) {
           console.log("Could not show error message to user");
@@ -393,26 +391,45 @@ chrome.runtime.onInstalled.addListener(() => {
   }
   const PROXY_URL = "https://proxy-khaki-eight-20.vercel.app/api/grammar";
 
+  function friendlyError(message) {
+    const error = new Error(message);
+    error.friendly = true;
+    return error;
+  }
+
   async function fixGrammarWithGemini(text) {
+    let response;
     try {
-      const response = await fetch(PROXY_URL, {
+      response = await fetch(PROXY_URL, {
         method: "POST",
+        signal: AbortSignal.timeout(35000),
         headers: {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({ text })
       });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || `Server error: ${response.status}`);
-      }
-      const data = await response.json();
-      console.log("Gemini response:", data);
-      return data.correctedText || text;
     } catch (error) {
-      console.error("API Error:", error);
-      throw error;
+      console.warn("API unreachable:", error.message);
+      if (error.name === "TimeoutError") {
+        throw friendlyError("That took too long. Try again.");
+      }
+      throw friendlyError("Can't reach the service. Check your connection.");
     }
+    if (!response.ok) {
+      let message = "";
+      try {
+        message = (await response.json()).error || "";
+      } catch (e) {}
+      if (!message) {
+        message = response.status === 429
+          ? "Too many requests. Try again in a minute."
+          : "Service is having trouble. Try again soon.";
+      }
+      console.warn("API declined:", response.status, message);
+      throw friendlyError(message);
+    }
+    const data = await response.json();
+    return data.correctedText || text;
   }
   function isGmailTab(tab) {
     return tab && tab.url && tab.url.includes('mail.google.com');
