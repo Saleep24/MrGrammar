@@ -6,6 +6,7 @@ const GEMINI_MODEL = "gemini-2.5-flash-lite";
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 const GROQ_MODEL = "llama-3.3-70b-versatile";
+const PROVIDER_TIMEOUT_MS = 10000;
 
 const SYSTEM_PROMPT = `You are a grammar-only correction tool. Your ONLY job is to fix:
 - Spelling errors
@@ -53,6 +54,7 @@ function isAllowedOrigin(origin) {
 async function callGemini(text, apiKey) {
   const response = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
     method: "POST",
+    signal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS),
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       contents: [
@@ -82,6 +84,7 @@ async function callGemini(text, apiKey) {
 async function callGroq(text, apiKey) {
   const response = await fetch(GROQ_URL, {
     method: "POST",
+    signal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS),
     headers: {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${apiKey}`
