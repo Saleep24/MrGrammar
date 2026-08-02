@@ -3,6 +3,21 @@ if (typeof window.mrGrammarLoaded === 'undefined') {
 let isLoadingIndicatorActive = false;
 let loadingTimeout = null;
 let lastProcessingTime = 0;
+function ensureMrGrammarStyles() {
+  if (document.getElementById('mr-grammar-styles')) return;
+  const style = document.createElement('style');
+  style.id = 'mr-grammar-styles';
+  style.textContent = `
+    .mr-g-pill{position:fixed;display:flex;align-items:center;gap:8px;background:rgba(23,23,26,.95);color:rgba(255,255,255,.92);padding:9px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.09);box-shadow:0 8px 24px rgba(0,0,0,.18);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:13px;font-weight:400;line-height:1.45;z-index:2147483646;opacity:0;transform:translateY(6px);transition:opacity .22s cubic-bezier(.2,0,0,1),transform .22s cubic-bezier(.2,0,0,1);pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100vw - 48px);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+    .mr-g-pill.mr-g-in{opacity:1;transform:translateY(0)}
+    .mr-g-center{left:0;right:0;margin-left:auto;margin-right:auto;width:fit-content;bottom:24px}
+    .mr-g-dot{flex:none;width:6px;height:6px;border-radius:50%;background:#f87171}
+    .mr-g-spinner{flex:none;width:12px;height:12px;border-radius:50%;border:1.5px solid rgba(255,255,255,.25);border-top-color:rgba(255,255,255,.85);animation:mr-g-spin .8s linear infinite}
+    @keyframes mr-g-spin{to{transform:rotate(360deg)}}
+    @media (prefers-reduced-motion:reduce){.mr-g-pill{transition:opacity .22s ease;transform:none}.mr-g-spinner{animation-duration:1.6s}}
+  `;
+  document.documentElement.appendChild(style);
+}
 function showLoadingIndicator(selectionRect) {
   // Only show in top-level frame, not iframes
   if (window.self !== window.top) {
@@ -14,24 +29,10 @@ function showLoadingIndicator(selectionRect) {
   }
   removeLoadingIndicator();
   isLoadingIndicatorActive = true;
+  ensureMrGrammarStyles();
   const loadingIndicator = document.createElement('div');
   loadingIndicator.id = 'mr-grammar-loading';
-  loadingIndicator.style.cssText = `
-    position: fixed;
-    background: #1f1f1f;
-    color: #ffffff;
-    padding: 8px 16px;
-    border-radius: 6px;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    font-size: 14px;
-    font-weight: 500;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-    z-index: 10000;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-    border: 1px solid #27272a;
-  `;
+  loadingIndicator.className = 'mr-g-pill';
   if (selectionRect && selectionRect.width > 0 && selectionRect.height > 0) {
     loadingIndicator.style.left = selectionRect.left + 'px';
     loadingIndicator.style.top = (selectionRect.bottom + 10) + 'px';
@@ -57,17 +58,19 @@ function showLoadingIndicator(selectionRect) {
       }
     }
     if (!positioned) {
-      loadingIndicator.style.left = '50%';
-      loadingIndicator.style.top = '20px';
-      loadingIndicator.style.transform = 'translateX(-50%)';
+      loadingIndicator.classList.add('mr-g-center');
       console.log("Used fallback center positioning");
     }
   }
-  loadingIndicator.textContent = 'Fixing grammar...';
+  const spinner = document.createElement('span');
+  spinner.className = 'mr-g-spinner';
+  const label = document.createElement('span');
+  label.textContent = 'Fixing grammar';
+  loadingIndicator.append(spinner, label);
   document.body.appendChild(loadingIndicator);
   setTimeout(() => {
     if (loadingIndicator.parentNode) {
-      loadingIndicator.style.opacity = '1';
+      loadingIndicator.classList.add('mr-g-in');
     }
   }, 10);
   if (loadingTimeout) {
@@ -86,7 +89,7 @@ function removeLoadingIndicator() {
   const existingIndicator = document.getElementById('mr-grammar-loading');
   if (existingIndicator) {
     isLoadingIndicatorActive = false;
-    existingIndicator.style.opacity = '0';
+    existingIndicator.classList.remove('mr-g-in');
     setTimeout(() => {
       if (existingIndicator.parentNode) {
         existingIndicator.parentNode.removeChild(existingIndicator);
@@ -114,45 +117,32 @@ function showErrorNotification(message) {
   const existingErrors = document.querySelectorAll('#mr-grammar-error, .mr-grammar-error');
   existingErrors.forEach(el => el.remove());
 
+  ensureMrGrammarStyles();
   const errorNotification = document.createElement('div');
   errorNotification.id = 'mr-grammar-error';
-  errorNotification.className = 'mr-grammar-error';
-  errorNotification.style.cssText = `
-    position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #dc2626;
-    color: #ffffff;
-    padding: 12px 20px;
-    border-radius: 8px;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    font-size: 14px;
-    font-weight: 500;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-    z-index: 10001;
-    max-width: 400px;
-    text-align: center;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-  `;
-  errorNotification.textContent = message;
+  errorNotification.className = 'mr-grammar-error mr-g-pill mr-g-center';
+  const dot = document.createElement('span');
+  dot.className = 'mr-g-dot';
+  const label = document.createElement('span');
+  label.textContent = message;
+  errorNotification.append(dot, label);
   document.body.appendChild(errorNotification);
 
   // Fade in
   setTimeout(() => {
-    errorNotification.style.opacity = '1';
+    errorNotification.classList.add('mr-g-in');
   }, 10);
 
-  // Auto-remove after 4 seconds
+  // Longer messages stay up longer
+  const duration = Math.min(7000, Math.max(3500, message.length * 55));
   setTimeout(() => {
-    errorNotification.style.opacity = '0';
+    errorNotification.classList.remove('mr-g-in');
     setTimeout(() => {
       if (errorNotification.parentNode) {
         errorNotification.remove();
       }
     }, 300);
-  }, 4000);
+  }, duration);
 }
 function replaceTextInFacebook(correctedText) {
   console.log("Attempting Facebook-specific text replacement");
