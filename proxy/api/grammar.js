@@ -7,6 +7,10 @@ const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GE
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 const GROQ_MODEL = "llama-3.3-70b-versatile";
 const PROVIDER_TIMEOUT_MS = 10000;
+const RATE_LIMIT_PER_MINUTE = 10;
+const RATE_LIMIT_PER_DAY = 200;
+const GLOBAL_LIMIT_PER_DAY = 2000;
+const REDIS_TIMEOUT_MS = 2000;
 
 const SYSTEM_PROMPT = `You are a grammar-only correction tool. Your ONLY job is to fix:
 - Spelling errors
@@ -48,6 +52,56 @@ Return ONLY the corrected text with no explanations, comments, or quotation mark
 function isAllowedOrigin(origin) {
   if (!origin) return false;
   return origin.startsWith("chrome-extension://");
+}
+
+// Counts requests in Upstash Redis. Fails open so an outage never blocks users.
+async function checkRateLimit(ip) {
+  const url = process.env.KV_REST_API_URL;
+  const token = process.env.KV_REST_API_TOKEN;
+  if (!url || !token) return { allowed: true };
+
+  const now = Date.now();
+  const minuteKey = `rl:m:${ip}:${Math.floor(now / 60000)}`;
+  const day = new Date(now).toISOString().slice(0, 10);
+  const dayKey = `rl:d:${ip}:${day}`;
+  const globalKey = `rl:g:${day}`;
+
+  try {
+    const response = await fetch(`${url}/pipeline`, {
+      method: "POST",
+      signal: AbortSignal.timeout(REDIS_TIMEOUT_MS),
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify([
+        ["INCR", minuteKey], ["EXPIRE", minuteKey, "90"],
+        ["INCR", dayKey], ["EXPIRE", dayKey, "90000"],
+        ["INCR", globalKey], ["EXPIRE", globalKey, "90000"]
+      ])
+    });
+    if (!response.ok) throw new Error(`Redis ${response.status}`);
+
+    const results = await response.json();
+    const perMinute = results[0]?.result;
+    const perDay = results[2]?.result;
+    const global = results[4]?.result;
+    if (typeof perMinute !== "number") return { allowed: true };
+
+    if (perMinute > RATE_LIMIT_PER_MINUTE) {
+      return { allowed: false, retryAfter: 60, error: "Too many requests. Please wait a minute and try again." };
+    }
+    if (perDay > RATE_LIMIT_PER_DAY) {
+      return { allowed: false, retryAfter: 3600, error: "Daily limit reached. Please try again tomorrow." };
+    }
+    if (global > GLOBAL_LIMIT_PER_DAY) {
+      return { allowed: false, retryAfter: 3600, error: "The service is at capacity today. Please try again tomorrow." };
+    }
+    return { allowed: true };
+  } catch (error) {
+    console.error("Rate limit check failed, allowing request:", error.message);
+    return { allowed: true };
+  }
 }
 
 // Primary: Gemini
@@ -133,6 +187,13 @@ export default async function handler(req, res) {
 
   if (text.length > 10000) {
     return res.status(400).json({ error: "Text too long (max 10,000 characters)" });
+  }
+
+  const ip = String(req.headers["x-real-ip"] || req.headers["x-forwarded-for"] || "unknown").split(",")[0].trim();
+  const limit = await checkRateLimit(ip);
+  if (!limit.allowed) {
+    res.setHeader("Retry-After", String(limit.retryAfter));
+    return res.status(429).json({ error: limit.error });
   }
 
   // Try Gemini first, fall back to Groq
