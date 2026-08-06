@@ -511,7 +511,7 @@ body {
   padding: var(--space-5);
 }
 
-.shortcuts-help h4 {
+.shortcuts-help h3 {
   font-size: var(--font-size-lg);
   font-weight: 500;
   color: var(--color-text-primary);
@@ -652,6 +652,14 @@ body {
   transition: var(--transition-fast);
 }
 
+button.footer-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
 .footer-link:hover {
   text-decoration: underline;
 }
@@ -722,12 +730,27 @@ body {
 }
 
 /* Focus States for Accessibility */
-.btn:focus,
-.form-input:focus,
-.form-select:focus,
-.model-card:focus {
+.btn:focus-visible,
+.form-input:focus-visible,
+.form-select:focus-visible,
+.model-card:focus-visible,
+.footer-link:focus-visible,
+.link:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
+}
+
+/* Visually hidden (screen reader only) */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* Smooth Scrolling */
@@ -775,4 +798,28 @@ html {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-border-hover);
-} 
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .btn:hover,
+  .model-card:hover,
+  .stat-card:hover {
+    transform: none;
+  }
+
+  .btn.loading::after {
+    display: none;
+  }
+}
