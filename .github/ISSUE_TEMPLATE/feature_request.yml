@@ -1,0 +1,17 @@
+name: Feature request
+description: Suggest an improvement or a new site to support
+title: "feat: "
+labels: ["feat"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would help
+    validations:
+      required: true

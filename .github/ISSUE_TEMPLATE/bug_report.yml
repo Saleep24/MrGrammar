@@ -1,0 +1,39 @@
+name: Bug report
+description: Something did not work as expected
+title: "fix: "
+labels: ["fix"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what actually happened.
+    validations:
+      required: true
+  - type: input
+    id: site
+    attributes:
+      label: Website
+      description: Where it happened, for example mail.google.com or the LinkedIn post composer.
+    validations:
+      required: true
+  - type: dropdown
+    id: trigger
+    attributes:
+      label: How you triggered it
+      options:
+        - Right-click menu
+        - Keyboard shortcut
+        - Both
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and version
+      placeholder: Chrome 131 on macOS
+  - type: textarea
+    id: text
+    attributes:
+      label: Example text
+      description: A short sample that reproduces it, if you are comfortable sharing one.
