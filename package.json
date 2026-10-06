@@ -1,0 +1,9 @@
+{
+  "name": "mrgrammar",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "package": "rm -f mrgrammar-*.zip && zip -qr mrgrammar-$(node -p \"require('./manifest.json').version\").zip manifest.json background.js content-script.js popup.html popup.js popup.css options.html options.js options.css icons -x '*.DS_Store'"
+  }
+}
