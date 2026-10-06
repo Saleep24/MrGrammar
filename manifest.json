@@ -3,7 +3,7 @@
     "name": "MrGrammar",
     "version": "3.0",
     "description": "Free AI-powered grammar correction directly in your browser. Compatible with Gmail, LinkedIn, Slack, and many more.",
-    "permissions": ["contextMenus", "activeTab", "scripting", "storage", "tabs"],
+    "permissions": ["contextMenus", "activeTab", "scripting", "storage"],
     "host_permissions": [
         "https://proxy-khaki-eight-20.vercel.app/*",
         "https://mail.google.com/*",
@@ -30,7 +30,6 @@
     "content_scripts": [
       {
         "matches": [
-          "<all_urls>",
           "https://mail.google.com/*",
           "https://outlook.office.com/*",
           "https://outlook.office365.com/*",
@@ -43,8 +42,7 @@
           "https://www.messenger.com/*"
         ],
         "js": ["content-script.js"],
-        "all_frames": true,
-        "exclude_matches": ["https://docs.google.com/*"]
+        "all_frames": true
       },
       {
         "matches": ["https://docs.google.com/document/*"],
