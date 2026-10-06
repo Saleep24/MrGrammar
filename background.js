@@ -17,6 +17,10 @@ chrome.runtime.onInstalled.addListener(() => {
         const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
         if (tabs.length === 0) return;
         const activeTab = tabs[0];
+        if (isGoogleDocsTab(activeTab)) {
+          await showHint(activeTab.id, DOCS_UNSUPPORTED);
+          return;
+        }
         let selectedText = '';
         try {
           const results = await chrome.scripting.executeScript({
@@ -28,18 +32,7 @@ chrome.runtime.onInstalled.addListener(() => {
           console.error("Failed to get selection via executeScript:", e);
         }
         if (!selectedText) {
-          try {
-            await chrome.scripting.executeScript({
-              target: { tabId: activeTab.id },
-              files: ['content-script.js']
-            });
-            await chrome.tabs.sendMessage(activeTab.id, {
-              action: "showError",
-              message: "Select some text first."
-            });
-          } catch (e) {
-            console.log("Could not show error message - content script not available");
-          }
+          await showHint(activeTab.id, "Select some text first.");
           return;
         }
         processSelectedText(selectedText, activeTab.id);
@@ -52,6 +45,10 @@ chrome.runtime.onInstalled.addListener(() => {
     console.log("Text selected:", text);
     try {
       const tabs = await chrome.tabs.query({active: true, currentWindow: true});
+      if (tabs.length > 0 && isGoogleDocsTab(tabs[0])) {
+        await showHint(tabId, DOCS_UNSUPPORTED);
+        return;
+      }
       const isGmail = tabs.length > 0 && isGmailTab(tabs[0]);
       const isSlack = tabs.length > 0 && isSlackTab(tabs[0]);
       const isLinkedIn = tabs.length > 0 && isLinkedInTab(tabs[0]);
@@ -432,6 +429,21 @@ chrome.runtime.onInstalled.addListener(() => {
     }
     const data = await response.json();
     return data.correctedText || text;
+  }
+  const DOCS_UNSUPPORTED = "Google Docs isn't supported yet.";
+  function isGoogleDocsTab(tab) {
+    return tab && tab.url && tab.url.includes('docs.google.com');
+  }
+  async function showHint(tabId, message) {
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId: tabId },
+        files: ['content-script.js']
+      });
+      await chrome.tabs.sendMessage(tabId, { action: "showError", message: message });
+    } catch (e) {
+      console.log("Could not show hint - content script not available");
+    }
   }
   function isGmailTab(tab) {
     return tab && tab.url && tab.url.includes('mail.google.com');
