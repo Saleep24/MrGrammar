@@ -1,0 +1,23 @@
+name: Uptime
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Preflight responds
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 -X OPTIONS https://proxy-khaki-eight-20.vercel.app/api/grammar)
+          echo "OPTIONS -> $code"
+          test "$code" = "200"
+      - name: Correction round trip
+        run: |
+          body=$(curl -s --max-time 40 -X POST https://proxy-khaki-eight-20.vercel.app/api/grammar \
+            -H 'Content-Type: application/json' -H 'Origin: chrome-extension://uptime-check' \
+            -d '{"text":"I goes to the store."}')
+          echo "POST -> $body"
+          echo "$body" | grep -q '"correctedText"'
