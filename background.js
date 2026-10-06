@@ -101,7 +101,7 @@ chrome.runtime.onInstalled.addListener(() => {
               // Target only the frame the selection came from (context menu frameId)
               target: { tabId: tabId, frameIds: [frameId] },
               world: 'MAIN',
-              func: (newText, oldText) => {
+              func: async (newText, oldText) => {
                 try {
                   // Remove loading indicator
                   const indicator = document.getElementById('mr-grammar-loading');
@@ -175,6 +175,21 @@ chrome.runtime.onInstalled.addListener(() => {
                     return content.includes(sample) && !content.includes(flatText(oldText));
                   }
 
+                  // Managed editors can revert DOM edits a tick later, so re-check after a short settle
+                  const settle = (ms) => new Promise((r) => setTimeout(r, ms));
+                  async function verifyStuck(editor) {
+                    if (!hasNewText(editor)) return false;
+                    await settle(250);
+                    return hasNewText(editor);
+                  }
+
+                  // Re-select the old text if the previous attempt was reverted
+                  function reselectIfNeeded(editor) {
+                    if (!hasNewText(editor) && flatText(editor.textContent).includes(flatText(oldText))) {
+                      selectText(editor, oldText);
+                    }
+                  }
+
                   // Step 1: Find the editor
                   let editor = null;
                   let hasSelection = sel && sel.rangeCount > 0 && !sel.isCollapsed;
@@ -238,20 +253,15 @@ chrome.runtime.onInstalled.addListener(() => {
                     if (!ok) {
                       ok = document.execCommand('insertText', false, newText);
                     }
-                    if (ok && hasNewText(editor)) {
+                    if (ok && await verifyStuck(editor)) {
                       return { success: true, method: 'execCommand' };
                     }
-                    // If execCommand claimed success but text isn't there, re-select for next attempt
-                    if (!hasNewText(editor) && flatText(editor.textContent).includes(flatText(oldText))) {
-                      selectText(editor, oldText);
-                    }
+                    // Re-select for the next attempt if execCommand failed or was reverted
+                    reselectIfNeeded(editor);
                   }
 
                   // Method B: Synthetic paste via ClipboardEvent (works with many modern editors)
                   {
-                    if (sel.isCollapsed && flatText(editor.textContent).includes(flatText(oldText))) {
-                      selectText(editor, oldText);
-                    }
                     if (sel.rangeCount > 0 && !sel.isCollapsed) {
                       const dt = new DataTransfer();
                       dt.setData('text/plain', newText);
@@ -259,17 +269,15 @@ chrome.runtime.onInstalled.addListener(() => {
                       editor.dispatchEvent(new ClipboardEvent('paste', {
                         clipboardData: dt, bubbles: true, cancelable: true
                       }));
-                      if (hasNewText(editor)) {
+                      if (await verifyStuck(editor)) {
                         return { success: true, method: 'paste-event' };
                       }
                     }
+                    reselectIfNeeded(editor);
                   }
 
                   // Method C: beforeinput with insertText (works with Lexical/ProseMirror editors)
                   {
-                    if (sel.isCollapsed && flatText(editor.textContent).includes(flatText(oldText))) {
-                      selectText(editor, oldText);
-                    }
                     if (sel.rangeCount > 0 && !sel.isCollapsed) {
                       editor.dispatchEvent(new InputEvent('beforeinput', {
                         inputType: 'insertText', data: newText,
@@ -278,17 +286,15 @@ chrome.runtime.onInstalled.addListener(() => {
                       editor.dispatchEvent(new InputEvent('input', {
                         inputType: 'insertText', data: newText, bubbles: true
                       }));
-                      if (hasNewText(editor)) {
+                      if (await verifyStuck(editor)) {
                         return { success: true, method: 'beforeinput-insertText' };
                       }
                     }
+                    reselectIfNeeded(editor);
                   }
 
                   // Method D: beforeinput with insertFromPaste (another modern editor pattern)
                   {
-                    if (sel.isCollapsed && flatText(editor.textContent).includes(flatText(oldText))) {
-                      selectText(editor, oldText);
-                    }
                     if (sel.rangeCount > 0 && !sel.isCollapsed) {
                       const dt = new DataTransfer();
                       dt.setData('text/plain', newText);
@@ -299,17 +305,15 @@ chrome.runtime.onInstalled.addListener(() => {
                       editor.dispatchEvent(new InputEvent('input', {
                         inputType: 'insertFromPaste', bubbles: true
                       }));
-                      if (hasNewText(editor)) {
+                      if (await verifyStuck(editor)) {
                         return { success: true, method: 'beforeinput-paste' };
                       }
                     }
+                    reselectIfNeeded(editor);
                   }
 
                   // Method E: Direct DOM replacement (last resort, may desync editor state)
                   {
-                    if (sel.isCollapsed && flatText(editor.textContent).includes(flatText(oldText))) {
-                      selectText(editor, oldText);
-                    }
                     if (sel.rangeCount > 0 && !sel.isCollapsed) {
                       const range = sel.getRangeAt(0);
                       range.deleteContents();
@@ -326,7 +330,7 @@ chrome.runtime.onInstalled.addListener(() => {
                         bubbles: true, data: newText
                       }));
 
-                      if (hasNewText(editor)) {
+                      if (await verifyStuck(editor)) {
                         return { success: true, method: 'direct-dom' };
                       }
                     }

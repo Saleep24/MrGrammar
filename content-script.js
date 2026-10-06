@@ -205,7 +205,7 @@ function replaceTextInFacebook(correctedText) {
     return false;
   }
 }
-function replaceTextInLinkedIn(correctedText, originalText) {
+async function replaceTextInLinkedIn(correctedText, originalText) {
   console.log("Attempting LinkedIn-specific text replacement");
   const selection = window.getSelection();
   let activeComposer = null;
@@ -297,32 +297,30 @@ function replaceTextInLinkedIn(correctedText, originalText) {
     return false;
   }
   console.log("Found LinkedIn composer:", activeComposer);
-  return tryLinkedInReplacementMethods(activeComposer, correctedText, selection, originalText);
+  return await tryLinkedInReplacementMethods(activeComposer, correctedText, selection, originalText);
 }
-function tryLinkedInReplacementMethods(composer, correctedText, selection, originalText) {
+async function tryLinkedInReplacementMethods(composer, correctedText, selection, originalText) {
   // Try the most reliable method first: execCommand insertText
-  if (tryMethod0_ExecCommandInsert(composer, correctedText, selection, originalText)) {
+  if (await tryMethod0_ExecCommandInsert(composer, correctedText, selection, originalText)) {
     console.log("LinkedIn replacement successful with Method 0 (execCommand)");
     return true;
   }
-  if (tryMethod1_DirectManipulation(composer, correctedText, selection)) {
+  if (await tryMethod1_DirectManipulation(composer, correctedText, selection, originalText)) {
     console.log("LinkedIn replacement successful with Method 1");
-    return true;
-  }
-  if (tryMethod2_ProgrammaticInsertion(composer, correctedText)) {
-    console.log("LinkedIn replacement successful with Method 2");
-    return true;
-  }
-  if (tryMethod3_ClipboardReplacement(composer, correctedText)) {
-    console.log("LinkedIn replacement successful with Method 3");
-    return true;
-  }
-  if (tryMethod4_SimulateTyping(composer, correctedText)) {
-    console.log("LinkedIn replacement successful with Method 4");
     return true;
   }
   console.log("All LinkedIn replacement methods failed");
   return false;
+}
+// LinkedIn editors can revert DOM edits a tick later, so re-check after a short settle
+function composerHasText(composer, text) {
+  const flat = (s) => (s || '').replace(/\s+/g, '');
+  return flat(composer.textContent || composer.innerText).includes(flat(text));
+}
+async function verifyReplacementStuck(composer, correctedText) {
+  if (!composerHasText(composer, correctedText)) return false;
+  await new Promise((r) => setTimeout(r, 250));
+  return composerHasText(composer, correctedText);
 }
 function findAndSelectText(container, searchText) {
   const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
@@ -373,7 +371,7 @@ function findAndSelectText(container, searchText) {
   sel.addRange(range);
   return true;
 }
-function tryMethod0_ExecCommandInsert(composer, correctedText, selection, originalText) {
+async function tryMethod0_ExecCommandInsert(composer, correctedText, selection, originalText) {
   try {
     composer.focus();
 
@@ -382,6 +380,10 @@ function tryMethod0_ExecCommandInsert(composer, correctedText, selection, origin
       // Try to find and select just the original text in the composer
       if (originalText && findAndSelectText(composer, originalText)) {
         console.log("Found and selected original text in composer");
+      } else if (originalText) {
+        // Never select-all when the original text is known, it would wipe the rest of the post
+        console.log("Original text not found in composer, skipping Method 0");
+        return false;
       } else {
         // Last resort: select all content in the composer
         const range = document.createRange();
@@ -395,7 +397,7 @@ function tryMethod0_ExecCommandInsert(composer, correctedText, selection, origin
     // Use execCommand insertText - this is the most compatible with Quill/React
     const success = document.execCommand('insertText', false, correctedText);
 
-    if (success) {
+    if (success && await verifyReplacementStuck(composer, correctedText)) {
       // Trigger additional events for React state sync
       triggerLinkedInEvents(composer, correctedText);
 
@@ -410,125 +412,32 @@ function tryMethod0_ExecCommandInsert(composer, correctedText, selection, origin
       console.log("Method 0 (execCommand insertText) succeeded");
       return true;
     }
+    console.log("Method 0: execCommand failed or editor reverted the change");
     return false;
   } catch (error) {
     console.log("Method 0 failed:", error);
     return false;
   }
 }
-function tryMethod1_DirectManipulation(composer, correctedText, selection) {
+async function tryMethod1_DirectManipulation(composer, correctedText, selection, originalText) {
   try {
-    const originalText = composer.textContent || composer.innerText || '';
     composer.focus();
-    if (selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      range.deleteContents();
-      range.insertNode(document.createTextNode(correctedText));
-    } else {
-      composer.textContent = correctedText;
+    // Re-select the original if the failed Method 0 attempt collapsed the selection
+    if (selection.rangeCount === 0 || selection.isCollapsed) {
+      if (!(originalText && findAndSelectText(composer, originalText))) {
+        console.log("Method 1: no selection to replace, skipping");
+        return false;
+      }
     }
+    const range = selection.getRangeAt(0);
+    range.deleteContents();
+    range.insertNode(document.createTextNode(correctedText));
     triggerLinkedInEvents(composer, correctedText);
-    setTimeout(() => {}, 10);
-    const newText = composer.textContent || composer.innerText || '';
-    const success = newText.includes(correctedText);
-    console.log(`Method 1 success check: "${correctedText}" found in "${newText}"? ${success}`);
+    const success = await verifyReplacementStuck(composer, correctedText);
+    console.log(`Method 1 success check: replacement stuck? ${success}`);
     return success;
   } catch (error) {
     console.log("Method 1 failed:", error);
-    return false;
-  }
-}
-function tryMethod2_ProgrammaticInsertion(composer, correctedText) {
-  try {
-    composer.focus();
-    const range = document.createRange();
-    range.selectNodeContents(composer);
-    range.collapse(false);
-    const selection = window.getSelection();
-    selection.removeAllRanges();
-    selection.addRange(range);
-    range.insertNode(document.createTextNode(correctedText));
-    triggerLinkedInEvents(composer, correctedText);
-    setTimeout(() => {}, 10);
-    const newText = composer.textContent || composer.innerText || '';
-    const success = newText.includes(correctedText);
-    console.log(`Method 2 success check: "${correctedText}" found in "${newText}"? ${success}`);
-    return success;
-  } catch (error) {
-    console.log("Method 2 failed:", error);
-    return false;
-  }
-}
-function tryMethod3_ClipboardReplacement(composer, correctedText) {
-  try {
-    composer.focus();
-    const range = document.createRange();
-    range.selectNodeContents(composer);
-    const selection = window.getSelection();
-    selection.removeAllRanges();
-    selection.addRange(range);
-    const textArea = document.createElement('textarea');
-    textArea.value = correctedText;
-    textArea.style.position = 'fixed';
-    textArea.style.opacity = '0';
-    textArea.style.pointerEvents = 'none';
-    document.body.appendChild(textArea);
-    textArea.select();
-    const copySuccess = document.execCommand('copy');
-    document.body.removeChild(textArea);
-    if (copySuccess) {
-      const pasteSuccess = document.execCommand('paste');
-      if (pasteSuccess) {
-        triggerLinkedInEvents(composer, correctedText);
-        return true;
-      }
-    }
-    return false;
-  } catch (error) {
-    console.log("Method 3 failed:", error);
-    return false;
-  }
-}
-function tryMethod4_SimulateTyping(composer, correctedText) {
-  try {
-    composer.focus();
-    composer.textContent = '';
-    for (let i = 0; i < correctedText.length; i++) {
-      const char = correctedText[i];
-      const keydownEvent = new KeyboardEvent('keydown', {
-        key: char,
-        code: `Key${char.toUpperCase()}`,
-        bubbles: true,
-        cancelable: true
-      });
-      const keypressEvent = new KeyboardEvent('keypress', {
-        key: char,
-        code: `Key${char.toUpperCase()}`,
-        bubbles: true,
-        cancelable: true
-      });
-      const inputEvent = new InputEvent('input', {
-        data: char,
-        inputType: 'insertText',
-        bubbles: true,
-        cancelable: true
-      });
-      const keyupEvent = new KeyboardEvent('keyup', {
-        key: char,
-        code: `Key${char.toUpperCase()}`,
-        bubbles: true,
-        cancelable: true
-      });
-      composer.dispatchEvent(keydownEvent);
-      composer.dispatchEvent(keypressEvent);
-      composer.textContent += char;
-      composer.dispatchEvent(inputEvent);
-      composer.dispatchEvent(keyupEvent);
-    }
-    triggerLinkedInEvents(composer, correctedText);
-    return true;
-  } catch (error) {
-    console.log("Method 4 failed:", error);
     return false;
   }
 }
@@ -604,7 +513,7 @@ function triggerLinkedInEvents(element, text) {
     element.dispatchEvent(new Event('input', { bubbles: true }));
   }, 200);
 }
-function replaceTextInEditor(correctedText, originalText) {
+async function replaceTextInEditor(correctedText, originalText) {
   const selection = window.getSelection();
   let selectionRect = null;
   if (selection.rangeCount > 0) {
@@ -617,7 +526,7 @@ function replaceTextInEditor(correctedText, originalText) {
   const isLinkedIn = window.location.hostname === 'www.linkedin.com';
   const isFacebook = window.location.hostname.includes('facebook.com') || window.location.hostname.includes('messenger.com');
   if (isLinkedIn) {
-    const result = replaceTextInLinkedIn(correctedText, originalText);
+    const result = await replaceTextInLinkedIn(correctedText, originalText);
     if (result) {
       console.log("LinkedIn text replacement successful");
       return true;
@@ -815,11 +724,18 @@ chrome.runtime.onMessage.addListener((request) => {
   else if (request.action === "replaceText") {
     console.log("Received corrected text");
     removeLoadingIndicator();
-    const success = replaceTextInEditor(request.correctedText, request.originalText);
-    if (request.originalText) {
-      trackTextReplacement(request.originalText, request.correctedText, success);
-    }
-  } 
+    // Async so LinkedIn's delayed revert detection can run; no sendResponse needed
+    (async () => {
+      const success = await replaceTextInEditor(request.correctedText, request.originalText);
+      if (request.originalText) {
+        trackTextReplacement(request.originalText, request.correctedText, success);
+      }
+      if (!success) {
+        // Tell the user instead of failing silently
+        showErrorNotification("Couldn't replace the text. Try selecting it again.");
+      }
+    })();
+  }
   else if (request.action === "stopProcessing") {
     removeLoadingIndicator();
   }
