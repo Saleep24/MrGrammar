@@ -42,8 +42,7 @@
           "https://www.messenger.com/*"
         ],
         "js": ["content-script.js"],
-        "all_frames": true,
-        "exclude_matches": ["https://docs.google.com/*"]
+        "all_frames": true
       },
       {
         "matches": ["https://docs.google.com/document/*"],

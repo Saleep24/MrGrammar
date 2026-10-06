@@ -29,9 +29,13 @@ chrome.runtime.onInstalled.addListener(() => {
         }
         if (!selectedText) {
           try {
+            await chrome.scripting.executeScript({
+              target: { tabId: activeTab.id },
+              files: ['content-script.js']
+            });
             await chrome.tabs.sendMessage(activeTab.id, {
               action: "showError",
-              message: "Please select some text before using the keyboard shortcut."
+              message: "Select some text first."
             });
           } catch (e) {
             console.log("Could not show error message - content script not available");
@@ -64,16 +68,14 @@ chrome.runtime.onInstalled.addListener(() => {
       if (isOutlook) {
         console.log("Processing Outlook content");
       }
-      if (isGmail || isSlack || isLinkedIn || isOutlook) {
-        try {
-          await chrome.scripting.executeScript({
-            target: {tabId: tabId, allFrames: true},
-            files: ['content-script.js']
-          });
-          console.log("Content script injected");
-        } catch (e) {
-          console.log("Content script already present or failed to inject", e);
-        }
+      try {
+        await chrome.scripting.executeScript({
+          target: {tabId: tabId, allFrames: true},
+          files: ['content-script.js']
+        });
+        console.log("Content script injected");
+      } catch (e) {
+        console.log("Content script already present or failed to inject", e);
       }
       try {
         chrome.tabs.sendMessage(tabId, {
