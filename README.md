@@ -85,6 +85,7 @@ You can customize these shortcuts by visiting:
 - No API key or account required.
 - Text is sent to a secure proxy server and processed via Google Gemini AI.
 - The extension does not collect or store any of your text data.
+- Full details are in the [privacy policy](PRIVACY.md).
 
 ## Credits
 - Powered by [Google Gemini AI](https://ai.google.dev/)
