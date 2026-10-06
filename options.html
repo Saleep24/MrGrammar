@@ -34,7 +34,7 @@
           </button>
         </div>
 
-        <div id="status" class="status-message" style="display: none;"></div>
+        <div id="status" class="status-message" role="status" style="display: none;"></div>
       </section>
 
       <!-- Keyboard Shortcuts Section -->
@@ -68,7 +68,7 @@
           </div>
 
           <div class="shortcuts-help">
-            <h4>Customize Shortcuts</h4>
+            <h3>Customize Shortcuts</h3>
             <p>You can customize these shortcuts by visiting:</p>
             <ul class="browser-links">
               <li><strong>Chrome:</strong> <code>chrome://extensions/shortcuts</code></li>
@@ -92,14 +92,14 @@
         <div class="stats-grid">
           <div class="stat-card">
             <div class="stat-content">
-              <h3 class="stat-value" id="total-corrections">0</h3>
+              <p class="stat-value" id="total-corrections">0</p>
               <p class="stat-label">Total Corrections</p>
             </div>
           </div>
 
           <div class="stat-card">
             <div class="stat-content">
-              <h3 class="stat-value" id="words-corrected">0</h3>
+              <p class="stat-value" id="words-corrected">0</p>
               <p class="stat-label">Words Corrected</p>
             </div>
           </div>
@@ -120,8 +120,8 @@
           MrGrammar v3.0 - Powered by Gemini AI
         </p>
         <div class="footer-links">
-          <a href="https://github.com/Saleep24" target="_blank" class="footer-link">GitHub</a>
-          <a href="#" class="footer-link" id="export-settings">Export Settings</a>
+          <a href="https://github.com/Saleep24" target="_blank" rel="noopener noreferrer" class="footer-link">GitHub<span class="visually-hidden"> (opens in new tab)</span></a>
+          <button type="button" class="footer-link" id="export-settings">Export Settings</button>
         </div>
       </div>
     </footer>

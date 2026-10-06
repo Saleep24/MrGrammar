@@ -53,6 +53,9 @@ function loadStatistics() {
   });
 }
 function animateStatistics() {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    return;
+  }
   const statValues = document.querySelectorAll('.stat-value');
   statValues.forEach((element, index) => {
     const finalValue = element.textContent;
@@ -104,13 +107,15 @@ function exportSettings() {
 }
 function showStatus(message, type) {
   const statusDiv = document.getElementById('status');
-  statusDiv.textContent = message;
+  statusDiv.textContent = '';
   statusDiv.className = 'status-message ' + type;
   statusDiv.style.display = 'block';
   statusDiv.style.opacity = '0';
   statusDiv.style.transform = 'translateY(-10px)';
   statusDiv.style.transition = 'all 0.3s ease-out';
+  // Set text after render so the live region announces the change
   setTimeout(() => {
+    statusDiv.textContent = message;
     statusDiv.style.opacity = '1';
     statusDiv.style.transform = 'translateY(0)';
   }, 10);
