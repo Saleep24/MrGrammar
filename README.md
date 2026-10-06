@@ -1,95 +1,69 @@
-# MrGrammar Browser Extension
+# MrGrammar
 
-A free browser extension that fixes grammar and polishes text directly in your browser using AI. Simply highlight text, right-click, and let AI handle the rest — no API key or setup needed!
+Free grammar correction in any text box in your browser. Highlight the text, right-click or press a shortcut, and the corrected version replaces it in place. No account, no API key, nothing to set up.
 
+[Install from the Chrome Web Store](https://chromewebstore.google.com/detail/mrgrammar/jpecnjmadbehcdpnlfdoobfbohajpdel)
 
-## Features
-- **Free to use** — no API key or account needed.
-- **One-click grammar correction** via right-click context menu.
-- **Powered by Google Gemini 2.5 Flash** for fast, accurate corrections.
-- **Keyboard shortcuts** for faster text correction.
-- **Loading indicator** shows when your text is being processed.
-- **Text statistics** displaying character, word, and sentence counts.
-- **Popup UI** with quick access to options and service status.
-- Works in Gmail, Outlook, Slack, LinkedIn, Facebook, and most editable fields.
-- **LinkedIn messaging support** with advanced state synchronization.
-- Fallback to clipboard copy for non-editable text.
-- Lightweight and easy to set up.
+## How it works
 
-## LinkedIn Integration
+1. Select the text you want to fix.
+2. Right-click and choose **Fix Grammar with AI**, or press `Ctrl+Shift+E` (`Cmd+Shift+E` on Mac).
+3. A small "Fixing grammar" pill appears while the text is processed, usually for about a second.
+4. The selection is replaced with the corrected text. Spelling, grammar and punctuation are fixed. Your word choice, tone and style are left alone.
 
-### Overview
-Mr. Grammar includes specialized support for LinkedIn messaging that addresses the unique challenges of LinkedIn's rich text editor. The extension uses multiple fallback methods to ensure corrected text is properly registered by LinkedIn's internal state before messages are sent.
+Behind the scenes the extension sends your selection to a small proxy server that asks Google Gemini for the correction, with Groq as a backup when Gemini is unavailable. The extension itself holds no keys and you never pay anything.
 
-### How It Works
-1. **Multi-Method Approach**: The extension tries four different methods to replace text:
-   - Direct DOM manipulation with comprehensive event triggering
-   - Programmatic text insertion with focus management
-   - Clipboard-based replacement
-   - Simulated user typing
+## Where it works
 
-2. **State Synchronization**: After text replacement, the extension triggers multiple events to ensure LinkedIn's internal state is updated:
-   - `input` events
-   - `change` events
-   - `compositionstart` and `compositionend` events
-   - `keyup` events
-   - Focus/blur cycles
+- Gmail
+- Outlook on the web (outlook.office.com, outlook.office365.com, outlook.live.com)
+- Slack
+- LinkedIn messages and comments
+- Facebook and Messenger
+- Most websites with ordinary text boxes, comment fields or editors
 
-3. **Comprehensive Selector Support**: The extension searches for LinkedIn message composers using multiple selectors to handle different LinkedIn interfaces and updates.
+On the sites listed above the extension is ready as soon as the page loads. On any other site it only touches the page when you invoke it there.
 
-### Troubleshooting LinkedIn Issues
+## Known limitations
 
-If you're experiencing issues with LinkedIn messaging:
+- **Google Docs is not supported.** Docs draws its text on a canvas rather than as regular page text, so there is nothing for the extension to read. You will see a short message saying so if you try. Real support would need a separate integration with Docs.
+- The LinkedIn post composer and some other heavily customised editors can reject outside changes. When that happens you will see "Couldn't replace the text" instead of a silent failure. Selecting the text again and retrying usually works.
+- Selections are capped at 10,000 characters.
+- The free service allows 10 corrections a minute and 200 a day per person. You will see a message if you hit the limit.
 
-1. **Open Browser Console**: Press F12 and go to the Console tab
-2. **Run Debug Command**: Type `debugLinkedInGrammarFixer()` and press Enter
-3. **Check Output**: Look for information about found message composers and their properties
-4. **Verify Selection**: Ensure text is properly selected before using the extension
+## Keyboard shortcut
 
-### Common LinkedIn Issues and Solutions
+The default is `Ctrl+Shift+E` on Windows, Linux and ChromeOS and `Cmd+Shift+E` on Mac. Change it at:
 
-**Issue**: Corrected text appears visually but original text is sent
-- **Solution**: The extension now uses multiple fallback methods and comprehensive event triggering to ensure LinkedIn's state is properly updated
-
-**Issue**: Extension doesn't work in LinkedIn messaging
-- **Solution**: Make sure you're on `www.linkedin.com` and try refreshing the page if the extension was installed after the page loaded
-
-**Issue**: Text replacement doesn't work in specific LinkedIn contexts
-- **Solution**: The extension supports multiple LinkedIn interfaces including direct messages, connection requests, and post comments
-
-## Setup Instructions
-1. Install the extension from the Chrome Web Store or load it as an unpacked extension.
-2. That's it — MrGrammar is free and works out of the box. No API key needed.
-
-## Usage
-1. Highlight the text you want to correct.
-2. Either:
-   - Right-click and select "Fix Grammar with AI" from the context menu, or
-   - Use the keyboard shortcut: `Ctrl+Shift+E` (Windows/Linux) or `Command+Shift+E` (Mac)
-3. A loading indicator will appear while the text is being processed.
-4. The highlighted text will be automatically replaced with the corrected version.
-5. A notification with text statistics will appear, showing the changes in character count, word count, and sentence count.
-
-## Keyboard Shortcuts
-- **Fix Grammar**: `Ctrl+Shift+E` (Windows/Linux) or `Command+Shift+E` (Mac)
-
-You can customize these shortcuts by visiting:
 - Chrome: `chrome://extensions/shortcuts`
 - Edge: `edge://extensions/shortcuts`
 - Brave: `brave://extensions/shortcuts`
 
-## Known limitations
-- Google Docs is not supported. Docs draws its text on a canvas instead of regular page text, so there is nothing for the extension to read. You will see a short message saying so if you try.
-
 ## Privacy
-- No API key or account required.
-- Text is sent to a secure proxy server and processed via Google Gemini AI.
-- The extension does not collect or store any of your text data.
-- Full details are in the [privacy policy](PRIVACY.md).
 
-## Credits
-- Powered by [Google Gemini AI](https://ai.google.dev/)
-- Icons from [Material Design Icons](https://material.io/resources/icons/)
+Text leaves your browser only when you ask for a correction, is not stored anywhere, and is never tied to you. The full details are in the [privacy policy](PRIVACY.md).
+
+## For developers
+
+The repository has two parts:
+
+- The extension at the repository root (`manifest.json`, `background.js`, `content-script.js`, popup and options pages). Load it unpacked from `chrome://extensions` with Developer mode on.
+- The proxy in `proxy/`, a single Vercel serverless function that holds the provider keys, applies rate limits and calls Gemini or Groq.
+
+Run the tests with Node 22 or newer:
+
+```
+npm test
+```
+
+Build the store package:
+
+```
+npm run package
+```
+
+Bug reports and ideas are welcome through the [issue templates](https://github.com/Saleep24/MrGrammar/issues/new/choose).
 
 ## License
+
 MIT
