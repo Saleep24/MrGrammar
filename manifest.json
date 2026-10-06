@@ -43,11 +43,6 @@
         ],
         "js": ["content-script.js"],
         "all_frames": true
-      },
-      {
-        "matches": ["https://docs.google.com/document/*"],
-        "js": ["google-docs-content.js"],
-        "all_frames": true
       }
     ],
     "options_page": "options.html",

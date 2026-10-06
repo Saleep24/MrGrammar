@@ -11,7 +11,7 @@ A free browser extension that fixes grammar and polishes text directly in your b
 - **Loading indicator** shows when your text is being processed.
 - **Text statistics** displaying character, word, and sentence counts.
 - **Popup UI** with quick access to options and service status.
-- Works in Gmail, Google Docs, CMS, and most editable fields.
+- Works in Gmail, Outlook, Slack, LinkedIn, Facebook, and most editable fields.
 - **LinkedIn messaging support** with advanced state synchronization.
 - Fallback to clipboard copy for non-editable text.
 - Lightweight and easy to set up.
@@ -77,6 +77,9 @@ You can customize these shortcuts by visiting:
 - Chrome: `chrome://extensions/shortcuts`
 - Edge: `edge://extensions/shortcuts`
 - Brave: `brave://extensions/shortcuts`
+
+## Known limitations
+- Google Docs is not supported. Docs draws its text on a canvas instead of regular page text, so there is nothing for the extension to read. You will see a short message saying so if you try.
 
 ## Privacy
 - No API key or account required.
