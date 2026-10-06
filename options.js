@@ -113,8 +113,7 @@ function showStatus(message, type) {
   statusDiv.style.opacity = '0';
   statusDiv.style.transform = 'translateY(-10px)';
   statusDiv.style.transition = 'all 0.3s ease-out';
-  // Set the text only after the element is rendered, so the live region
-  // registers a content change and screen readers announce it.
+  // Set text after render so the live region announces the change
   setTimeout(() => {
     statusDiv.textContent = message;
     statusDiv.style.opacity = '1';
