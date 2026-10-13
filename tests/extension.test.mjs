@@ -55,7 +55,7 @@ test('keyboard command is declared with a default shortcut', () => {
 });
 
 test('every script parses', () => {
-  const scripts = ['background.js', 'content-script.js', 'popup.js', 'options.js', 'proxy/api/grammar.js', ...manifest.content_scripts.flatMap(cs => cs.js)];
+  const scripts = ['background.js', 'content-script.js', 'shared.js', 'popup.js', 'options.js', 'proxy/api/grammar.js', ...manifest.content_scripts.flatMap(cs => cs.js)];
   for (const f of new Set(scripts)) {
     execFileSync(process.execPath, ['--check', join(root, f)], { stdio: 'pipe' });
   }
@@ -82,10 +82,21 @@ test('popup and options read the version from the manifest', () => {
 });
 
 test('help links point at the repository, not a profile', () => {
-  for (const f of ['popup.js', 'options.html']) {
+  for (const f of ['popup.html', 'popup.js', 'options.html', 'options.js', 'shared.js']) {
     const src = readFileSync(join(root, f), 'utf8');
     for (const url of src.match(/https:\/\/github\.com\/[^\s'"<]+/g) || []) {
       assert.ok(url.startsWith('https://github.com/Saleep24/MrGrammar'), `${f} links to ${url}`);
+    }
+  }
+});
+
+test('every script a page loads exists and ships in the store zip', () => {
+  const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).scripts.package;
+  for (const page of [manifest.action.default_popup, manifest.options_page]) {
+    const html = readFileSync(join(root, page), 'utf8');
+    for (const [, src] of html.matchAll(/<script src="([^"]+)"/g)) {
+      assert.ok(existsSync(join(root, src)), `${page} loads missing ${src}`);
+      assert.ok(pkg.includes(' ' + src + ' '), `${src} is not in the package script`);
     }
   }
 });

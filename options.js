@@ -1,5 +1,3 @@
-const PROXY_URL = 'https://proxy-khaki-eight-20.vercel.app/api/grammar';
-
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('version').textContent = 'v' + chrome.runtime.getManifest().version;
   document.getElementById('test-connection').addEventListener('click', testConnection);
@@ -10,42 +8,29 @@ document.addEventListener('DOMContentLoaded', () => {
   loadStatistics();
 });
 
-function shortcutsPageUrl() {
-  return (navigator.userAgent.includes('Edg/') ? 'edge' : 'chrome') + '://extensions/shortcuts';
-}
-
-function openShortcutSettings() {
-  chrome.tabs.create({ url: shortcutsPageUrl() });
-}
-
 async function showShortcut() {
-  const key = document.getElementById('shortcut-key');
-  const note = document.getElementById('shortcut-note');
-  try {
-    const commands = await chrome.commands.getAll();
-    const cmd = commands.find(c => c.name === 'fix-grammar');
-    const bound = cmd && cmd.shortcut;
-    key.textContent = bound || 'Not set';
-    key.classList.toggle('unset', !bound);
-    note.textContent = bound
-      ? 'Works on any page where you can select text.'
-      : 'The shortcut is not assigned, usually because another extension already uses it. Pick a different one below.';
-  } catch (error) {
-    key.textContent = 'Unknown';
-    note.textContent = 'Could not read the current shortcut.';
-    console.warn('Could not read the keyboard shortcut', error);
-  }
+  const bound = await readFixGrammarShortcut();
+  renderShortcut(document.getElementById('shortcut-key'), bound);
+  const notes = {
+    bound: 'Works on any page where you can select text.',
+    unset: 'The shortcut is not assigned, usually because another extension already uses it. Pick a different one below.',
+    unknown: 'Could not read the current shortcut.'
+  };
+  document.getElementById('shortcut-note').textContent = bound ? notes.bound : bound === '' ? notes.unset : notes.unknown;
 }
 
 async function testConnection() {
   const button = document.getElementById('test-connection');
+  if (button.disabled) return;
+  button.disabled = true;
   button.classList.add('loading');
   showStatus('Testing connection...', 'info');
   try {
     const response = await fetch(PROXY_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: 'I goes to the store.' })
+      body: JSON.stringify({ text: 'I goes to the store.' }),
+      signal: AbortSignal.timeout(15000)
     });
     if (response.ok) {
       const data = await response.json();
@@ -55,16 +40,17 @@ async function testConnection() {
       showStatus(`Connection failed: ${error.error || 'Unknown error'}`, 'error');
     }
   } catch (error) {
-    showStatus('Connection failed: Network error', 'error');
+    showStatus(error.name === 'TimeoutError' ? 'Connection failed: Timed out' : 'Connection failed: Network error', 'error');
     console.warn('Connection test failed', error);
   } finally {
+    button.disabled = false;
     button.classList.remove('loading');
   }
 }
 
 function loadStatistics() {
   chrome.storage.local.get(['grammarStats'], (result) => {
-    const stats = result.grammarStats || { totalCorrections: 0, wordsCorrected: 0 };
+    const stats = result.grammarStats || {};
     document.getElementById('total-corrections').textContent = (stats.totalCorrections || 0).toLocaleString();
     document.getElementById('words-corrected').textContent = (stats.wordsCorrected || 0).toLocaleString();
   });
@@ -72,17 +58,7 @@ function loadStatistics() {
 
 function resetStatistics() {
   if (!confirm('Reset all statistics? This cannot be undone.')) return;
-  chrome.storage.local.set({
-    grammarStats: {
-      totalCorrections: 0,
-      wordsCorrected: 0,
-      accuracyRate: 0,
-      apiSuccessCount: 0,
-      apiTotalCount: 0,
-      replacementSuccessCount: 0,
-      replacementTotalCount: 0
-    }
-  }, () => {
+  chrome.storage.local.remove('grammarStats', () => {
     showStatus('Statistics reset.', 'success');
     loadStatistics();
   });
