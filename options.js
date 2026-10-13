@@ -1,30 +1,48 @@
+const PROXY_URL = 'https://proxy-khaki-eight-20.vercel.app/api/grammar';
+
 document.addEventListener('DOMContentLoaded', () => {
-  initializeOptions();
+  document.getElementById('version').textContent = 'v' + chrome.runtime.getManifest().version;
+  document.getElementById('test-connection').addEventListener('click', testConnection);
+  document.getElementById('change-shortcut').addEventListener('click', openShortcutSettings);
+  document.getElementById('reset-stats').addEventListener('click', resetStatistics);
+  document.getElementById('export-stats').addEventListener('click', exportStatistics);
+  showShortcut();
   loadStatistics();
 });
-function initializeOptions() {
-  document.getElementById('test-connection').addEventListener('click', testConnection);
-  document.getElementById('reset-stats').addEventListener('click', resetStatistics);
-  document.getElementById('export-settings').addEventListener('click', exportSettings);
-  addInteractiveEffects();
+
+function shortcutsPageUrl() {
+  return (navigator.userAgent.includes('Edg/') ? 'edge' : 'chrome') + '://extensions/shortcuts';
 }
-function addInteractiveEffects() {
-  const buttons = document.querySelectorAll('.btn');
-  buttons.forEach(button => {
-    button.addEventListener('click', function() {
-      if (!this.classList.contains('loading')) {
-        this.classList.add('loading');
-        setTimeout(() => {
-          this.classList.remove('loading');
-        }, 2000);
-      }
-    });
-  });
+
+function openShortcutSettings() {
+  chrome.tabs.create({ url: shortcutsPageUrl() });
 }
+
+async function showShortcut() {
+  const key = document.getElementById('shortcut-key');
+  const note = document.getElementById('shortcut-note');
+  try {
+    const commands = await chrome.commands.getAll();
+    const cmd = commands.find(c => c.name === 'fix-grammar');
+    const bound = cmd && cmd.shortcut;
+    key.textContent = bound || 'Not set';
+    key.classList.toggle('unset', !bound);
+    note.textContent = bound
+      ? 'Works on any page where you can select text.'
+      : 'The shortcut is not assigned, usually because another extension already uses it. Pick a different one below.';
+  } catch (error) {
+    key.textContent = 'Unknown';
+    note.textContent = 'Could not read the current shortcut.';
+    console.warn('Could not read the keyboard shortcut', error);
+  }
+}
+
 async function testConnection() {
+  const button = document.getElementById('test-connection');
+  button.classList.add('loading');
   showStatus('Testing connection...', 'info');
   try {
-    const response = await fetch('https://proxy-khaki-eight-20.vercel.app/api/grammar', {
+    const response = await fetch(PROXY_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: 'I goes to the store.' })
@@ -33,99 +51,65 @@ async function testConnection() {
       const data = await response.json();
       showStatus(`Connection successful! Corrected: "${data.correctedText}"`, 'success');
     } else {
-      const error = await response.json();
+      const error = await response.json().catch(() => ({}));
       showStatus(`Connection failed: ${error.error || 'Unknown error'}`, 'error');
     }
   } catch (error) {
     showStatus('Connection failed: Network error', 'error');
-    console.error('Connection test error:', error);
+    console.warn('Connection test failed', error);
+  } finally {
+    button.classList.remove('loading');
   }
 }
+
 function loadStatistics() {
   chrome.storage.local.get(['grammarStats'], (result) => {
-    const stats = result.grammarStats || {
-      totalCorrections: 0,
-      wordsCorrected: 0
-    };
-    document.getElementById('total-corrections').textContent = stats.totalCorrections;
-    document.getElementById('words-corrected').textContent = stats.wordsCorrected;
-    animateStatistics();
+    const stats = result.grammarStats || { totalCorrections: 0, wordsCorrected: 0 };
+    document.getElementById('total-corrections').textContent = stats.totalCorrections.toLocaleString();
+    document.getElementById('words-corrected').textContent = stats.wordsCorrected.toLocaleString();
   });
 }
-function animateStatistics() {
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    return;
-  }
-  const statValues = document.querySelectorAll('.stat-value');
-  statValues.forEach((element, index) => {
-    const finalValue = element.textContent;
-    const isPercentage = finalValue.includes('%');
-    const numericValue = parseInt(finalValue.replace(/[^\d]/g, ''));
-    if (numericValue > 0) {
-      element.textContent = '0' + (isPercentage ? '%' : '');
-      let currentValue = 0;
-      const increment = numericValue / 20;
-      const timer = setInterval(() => {
-        currentValue += increment;
-        if (currentValue >= numericValue) {
-          currentValue = numericValue;
-          clearInterval(timer);
-        }
-        element.textContent = Math.floor(currentValue) + (isPercentage ? '%' : '');
-      }, 50 + (index * 10));
-    }
-  });
-}
+
 function resetStatistics() {
-  if (confirm('Are you sure you want to reset all statistics? This action cannot be undone.')) {
-    chrome.storage.local.set({
-      grammarStats: {
-        totalCorrections: 0,
-        wordsCorrected: 0,
-        accuracyRate: 0,
-        apiSuccessCount: 0,
-        apiTotalCount: 0,
-        replacementSuccessCount: 0,
-        replacementTotalCount: 0
-      }
-    }, () => {
-      showStatus('Statistics reset successfully!', 'success');
-      loadStatistics();
-    });
-  }
+  if (!confirm('Reset all statistics? This cannot be undone.')) return;
+  chrome.storage.local.set({
+    grammarStats: {
+      totalCorrections: 0,
+      wordsCorrected: 0,
+      accuracyRate: 0,
+      apiSuccessCount: 0,
+      apiTotalCount: 0,
+      replacementSuccessCount: 0,
+      replacementTotalCount: 0
+    }
+  }, () => {
+    showStatus('Statistics reset.', 'success');
+    loadStatistics();
+  });
 }
-function exportSettings() {
+
+function exportStatistics() {
   chrome.storage.local.get(['grammarStats'], (stats) => {
-    const dataStr = JSON.stringify(stats, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify(stats, null, 2)], { type: 'application/json' });
     const link = document.createElement('a');
-    link.href = URL.createObjectURL(dataBlob);
+    link.href = URL.createObjectURL(blob);
     link.download = 'mrgrammar-stats.json';
     link.click();
-    showStatus('Statistics exported successfully!', 'success');
+    URL.revokeObjectURL(link.href);
+    showStatus('Statistics exported.', 'success');
   });
 }
+
+let hideStatusTimer;
 function showStatus(message, type) {
   const statusDiv = document.getElementById('status');
+  clearTimeout(hideStatusTimer);
   statusDiv.textContent = '';
   statusDiv.className = 'status-message ' + type;
   statusDiv.style.display = 'block';
-  statusDiv.style.opacity = '0';
-  statusDiv.style.transform = 'translateY(-10px)';
-  statusDiv.style.transition = 'all 0.3s ease-out';
   // Set text after render so the live region announces the change
-  setTimeout(() => {
-    statusDiv.textContent = message;
-    statusDiv.style.opacity = '1';
-    statusDiv.style.transform = 'translateY(0)';
-  }, 10);
-  if (type === 'success' || type === 'info') {
-    setTimeout(() => {
-      statusDiv.style.opacity = '0';
-      statusDiv.style.transform = 'translateY(-10px)';
-      setTimeout(() => {
-        statusDiv.style.display = 'none';
-      }, 300);
-    }, 5000);
+  setTimeout(() => { statusDiv.textContent = message; }, 10);
+  if (type === 'success') {
+    hideStatusTimer = setTimeout(() => { statusDiv.style.display = 'none'; }, 5000);
   }
 }
