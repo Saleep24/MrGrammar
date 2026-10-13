@@ -65,8 +65,8 @@ async function testConnection() {
 function loadStatistics() {
   chrome.storage.local.get(['grammarStats'], (result) => {
     const stats = result.grammarStats || { totalCorrections: 0, wordsCorrected: 0 };
-    document.getElementById('total-corrections').textContent = stats.totalCorrections.toLocaleString();
-    document.getElementById('words-corrected').textContent = stats.wordsCorrected.toLocaleString();
+    document.getElementById('total-corrections').textContent = (stats.totalCorrections || 0).toLocaleString();
+    document.getElementById('words-corrected').textContent = (stats.wordsCorrected || 0).toLocaleString();
   });
 }
 
