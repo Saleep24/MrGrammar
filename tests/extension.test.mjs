@@ -71,3 +71,21 @@ test('the page injection function is self-contained and parses', () => {
   assert.equal(compiled.length, 2);
   assert.ok(!fn.includes('chrome.'), 'injected code cannot use extension APIs');
 });
+
+test('popup and options read the version from the manifest', () => {
+  for (const f of ['popup.html', 'options.html']) {
+    assert.ok(!readFileSync(join(root, f), 'utf8').includes('v' + manifest.version), `${f} hard-codes the version`);
+  }
+  for (const f of ['popup.js', 'options.js']) {
+    assert.ok(readFileSync(join(root, f), 'utf8').includes('getManifest().version'), `${f} does not read the manifest version`);
+  }
+});
+
+test('help links point at the repository, not a profile', () => {
+  for (const f of ['popup.js', 'options.html']) {
+    const src = readFileSync(join(root, f), 'utf8');
+    for (const url of src.match(/https:\/\/github\.com\/[^\s'"<]+/g) || []) {
+      assert.ok(url.startsWith('https://github.com/Saleep24/MrGrammar'), `${f} links to ${url}`);
+    }
+  }
+});
