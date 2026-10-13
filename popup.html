@@ -3,39 +3,44 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
   <title>MrGrammar</title>
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
   <div class="popup">
-    <!-- Header -->
     <div class="header">
       <div class="brand">
         <h1>MrGrammar</h1>
-        <span class="version">v3.0</span>
+        <span class="version" id="version"></span>
       </div>
     </div>
 
-    <!-- Content -->
     <div class="content">
-      <!-- Shortcut Info -->
-      <div class="shortcut-row">
-        <span class="shortcut-label">Shortcut</span>
-        <kbd class="shortcut-key" id="keyboard-shortcut">⌘+Shift+E</kbd>
-      </div>
+      <p class="howto">Select text, then right-click and choose <strong>Fix Grammar with AI</strong> or press the shortcut.</p>
 
-      <!-- Status Row -->
-      <div class="status-row">
-        <span class="status-label">Status</span>
-        <div class="status-info" role="status">
-          <div class="status-dot" id="api-status-indicator" aria-hidden="true"></div>
-          <span class="status-text" id="api-status-text">Checking...</span>
-          <span class="model-tag" id="model-badge" style="display: none;"></span>
+      <div class="row">
+        <span class="row-label">Shortcut</span>
+        <div class="row-value">
+          <kbd class="shortcut-key" id="keyboard-shortcut">...</kbd>
+          <button type="button" class="text-btn" id="change-shortcut">Change</button>
         </div>
       </div>
+
+      <div class="row">
+        <span class="row-label">Status</span>
+        <div class="row-value" role="status">
+          <div class="status-dot" id="api-status-indicator" aria-hidden="true"></div>
+          <span class="status-text" id="api-status-text">Checking...</span>
+        </div>
+      </div>
+
+      <div class="row">
+        <span class="row-label">Corrections</span>
+        <span class="row-value status-text" id="correction-count">0</span>
+      </div>
     </div>
 
-    <!-- Actions -->
     <div class="actions">
       <button class="action-btn" id="options-btn" title="Settings" aria-label="Settings">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -43,7 +48,7 @@
           <circle cx="12" cy="12" r="3"></circle>
         </svg>
       </button>
-      <button class="action-btn" id="help-btn" title="Help & Support" aria-label="Help & Support">
+      <button class="action-btn" id="help-btn" title="Report a problem" aria-label="Report a problem">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
           <path d="M12 17h.01"></path>
@@ -53,6 +58,7 @@
     </div>
   </div>
 
+  <script src="shared.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

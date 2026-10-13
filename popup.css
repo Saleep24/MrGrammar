@@ -1,57 +1,55 @@
-/* Modern CSS Reset */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
-/* 2025 AI Design System - Ultra Minimal */
 :root {
-  /* Minimal Color Palette - Dark Theme */
-  --gray-50: #18181b;
-  --gray-100: #27272a;
-  --gray-200: #3f3f46;
-  --gray-300: #52525b;
-  --gray-400: #71717a;
-  --gray-500: #a1a1aa;
-  --gray-600: #d4d4d8;
-  --gray-700: #e4e4e7;
-  --gray-800: #f4f4f5;
-  --gray-900: #fafafa;
-
-  --blue-500: #3b82f6;
-  --blue-600: #2563eb;
-  --green-500: #22c55e;
-  --red-500: #ef4444;
-
-  /* Typography */
+  --bg: #ffffff;
+  --bg-raised: #f4f4f5;
+  --border: #e4e4e7;
+  --border-strong: #d4d4d8;
+  --text: #18181b;
+  --text-muted: #52525b;
+  --text-faint: #71717a;
+  --accent: #2563eb;
+  --green: #16a34a;
+  --red: #dc2626;
   --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', system-ui, sans-serif;
   --font-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
 }
 
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0a0a;
+    --bg-raised: #1c1c1f;
+    --border: #27272a;
+    --border-strong: #3f3f46;
+    --text: #fafafa;
+    --text-muted: #d4d4d8;
+    --text-faint: #a1a1aa;
+    --accent: #3b82f6;
+    --green: #22c55e;
+    --red: #ef4444;
+  }
+}
+
 body {
-  margin: 0;
-  padding: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  font-family: var(--font-sans);
   font-size: 14px;
   line-height: 1.4;
-  color: var(--gray-800);
-  background: #0a0a0a;
+  color: var(--text);
+  background: var(--bg);
   overflow: hidden;
 }
 
-/* Main Container */
 .popup {
   width: 320px;
-  background: #0a0a0a;
-  border-radius: 20px;
-  overflow: hidden;
 }
 
-/* Header */
 .header {
   padding: 16px 20px 12px;
-  border-bottom: 1px solid var(--gray-100);
+  border-bottom: 1px solid var(--border);
 }
 
 .brand {
@@ -63,101 +61,116 @@ body {
 .brand h1 {
   font-size: 16px;
   font-weight: 600;
-  color: var(--gray-900);
   letter-spacing: -0.025em;
 }
 
 .version {
   font-size: 11px;
   font-weight: 500;
-  color: var(--gray-500);
-  background: var(--gray-100);
+  color: var(--text-faint);
+  background: var(--bg-raised);
   padding: 2px 6px;
   border-radius: 4px;
   font-family: var(--font-mono);
 }
 
-/* Content */
 .content {
-  padding: 16px 20px;
+  padding: 14px 20px 16px;
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-/* Rows */
-.shortcut-row,
-.status-row {
+.howto {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-muted);
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.howto strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   min-height: 24px;
 }
 
-.shortcut-label,
-.status-label {
+.row-label {
   font-size: 13px;
   font-weight: 500;
-  color: var(--gray-600);
+  color: var(--text-muted);
 }
 
-/* Shortcut Key */
+.row-value {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .shortcut-key {
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 600;
-  background: var(--gray-100);
-  color: var(--gray-700);
+  background: var(--bg-raised);
+  color: var(--text);
   padding: 4px 8px;
   border-radius: 4px;
-  border: 1px solid var(--gray-200);
-  box-shadow: 0 1px 0 var(--gray-200);
+  border: 1px solid var(--border-strong);
+  box-shadow: 0 1px 0 var(--border-strong);
 }
 
-/* Status Info */
-.status-info {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.shortcut-key.unset {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  color: var(--red);
+}
+
+.text-btn {
+  background: none;
+  border: none;
+  padding: 2px 0;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.text-btn:hover {
+  text-decoration: underline;
 }
 
 .status-dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--gray-300);
+  background: var(--border-strong);
   transition: background-color 0.2s ease;
 }
 
 .status-dot.status-connected {
-  background: var(--green-500);
+  background: var(--green);
 }
 
 .status-dot.status-disconnected {
-  background: var(--red-500);
+  background: var(--red);
 }
 
 .status-text {
   font-size: 12px;
   font-weight: 500;
-  color: var(--gray-600);
+  color: var(--text-muted);
 }
 
-.model-tag {
-  font-size: 10px;
-  font-weight: 600;
-  background: var(--blue-600);
-  color: white;
-  padding: 2px 6px;
-  border-radius: 3px;
-  text-transform: uppercase;
-  letter-spacing: 0.025em;
-}
-
-/* Actions */
 .actions {
   padding: 12px 20px 16px;
-  border-top: 1px solid var(--gray-100);
+  border-top: 1px solid var(--border);
   display: flex;
   gap: 8px;
   justify-content: flex-end;
@@ -166,25 +179,23 @@ body {
 .action-btn {
   width: 32px;
   height: 32px;
-  border: 1px solid var(--gray-200);
-  background: #0a0a0a;
+  border: 1px solid var(--border-strong);
+  background: var(--bg);
   border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.15s ease;
-  color: var(--gray-500);
+  color: var(--text-faint);
+  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .action-btn:hover {
-  background: var(--gray-50);
-  border-color: var(--gray-300);
-  color: var(--gray-700);
+  background: var(--bg-raised);
+  color: var(--text);
 }
 
 .action-btn:active {
-  background: var(--gray-100);
   transform: scale(0.98);
 }
 
@@ -193,43 +204,14 @@ body {
   height: 16px;
 }
 
-/* Responsive adjustments */
-@media (max-width: 350px) {
-  .popup {
-    width: 300px;
-  }
-  
-  .header,
-  .content,
-  .actions {
-    padding-left: 16px;
-    padding-right: 16px;
-  }
-}
-
-/* Focus states */
-.action-btn:focus-visible {
-  outline: 2px solid var(--blue-500);
+.action-btn:focus-visible,
+.text-btn:focus-visible {
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
-/* Loading state */
-.action-btn.loading {
-  pointer-events: none;
-  opacity: 0.6;
-}
-
-/* Smooth transitions */
-* {
-  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
-}
-
-/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation: none !important;
+  * {
     transition: none !important;
   }
 }
