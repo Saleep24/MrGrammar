@@ -1,5 +1,5 @@
 window.chrome = {
-  runtime: { getManifest: () => ({ version: '3.1' }), openOptionsPage() {} },
+  runtime: { getManifest: () => ({ version: '__VERSION__' }), openOptionsPage() {} },
   tabs: { create() {} },
   commands: { getAll: async () => [{ name: 'fix-grammar', shortcut: navigator.platform.startsWith('Mac') ? '⌘⇧E' : 'Ctrl+Shift+E' }] },
   storage: { local: {

@@ -63,7 +63,7 @@ Category: Tools (Workflow & Planning is the alternative).
 
 Language: English.
 
-Store icon: `icons/icon-128.png`.
+Store icon: `icons/icon-128.png`. The 1024 px source the smaller icons were cut from is in git history at `ca02f28^:icons/icon-48.png`.
 
 Screenshots, 1280x800, upload in this order:
 
@@ -79,7 +79,7 @@ To regenerate the images after a UI change, run `store/screenshots/render.sh`. T
 Additional fields:
 
 - Homepage URL: https://github.com/Saleep24/MrGrammar
-- Support URL: https://github.com/Saleep24/MrGrammar/issues/new/choose
+- Support URL: https://github.com/Saleep24/MrGrammar/issues (the templates page redirects logged-out visitors to sign in)
 - Mature content: No
 
 ## Privacy practices tab
@@ -98,11 +98,13 @@ Permission justifications:
 
 Remote code: No, this extension does not use remote code. All JavaScript ships in the package. The proxy returns plain text only.
 
-Data usage, check:
+Data usage, check these three and leave the rest unchecked:
 
-- Website content (the text the user selects is sent to the proxy for correction)
+- Website content: the text the user selects is sent to the proxy for correction.
+- Personal communications: the selected text can be part of an email or chat message, for example in Gmail, Slack or Messenger.
+- Location: the proxy keeps the IP address with a request count for up to 24 hours to enforce the rate limit, as PRIVACY.md discloses. It is never linked to text.
 
-Leave every other data type unchecked. No personally identifiable information, health, financial, authentication, personal communications beyond the selected text, location, web history or user activity is collected.
+Nothing else is collected: no personally identifiable information, health, financial or authentication data, web history or user activity.
 
 Certify all three statements:
 
