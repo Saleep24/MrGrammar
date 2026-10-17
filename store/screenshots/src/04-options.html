@@ -1,0 +1,26 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="base.css">
+<style>
+.wrap{flex-direction:row;gap:48px;padding-top:48px}
+.left{width:360px;padding-top:40px}
+.left h1{font-size:36px}
+.left .sub{font-size:17px;margin-top:14px}
+.left ul{margin-top:26px;list-style:none;display:flex;flex-direction:column;gap:12px}
+.left li{font-size:16px;color:#3f3f46;padding-left:18px;position:relative;line-height:1.45}
+.left li::before{content:"";position:absolute;left:0;top:9px;width:7px;height:7px;border-radius:50%;background:#16a34a}
+.right{flex:1;position:relative}
+.optwin{left:0;top:0;width:760px;height:716px}
+.optwin iframe{border:0;width:1152px;height:1024px;transform:scale(.66);transform-origin:top left;display:block}
+</style></head><body><div class="wrap">
+<div class="left">
+  <h1>Your usage stays on your device</h1>
+  <p class="sub">The settings page shows the live shortcut, a one-click connection test, and how much you have corrected.</p>
+  <ul>
+    <li>Counts are stored only in your browser and never sent anywhere.</li>
+    <li>Reset or export them any time.</li>
+    <li>Follows your system light or dark theme.</li>
+  </ul>
+</div>
+<div class="right">
+  <div class="win optwin"><div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="title">MrGrammar Settings</span></div><iframe src="ext/options.html"></iframe></div>
+</div>
+</div></body></html>

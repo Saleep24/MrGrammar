@@ -1,0 +1,31 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="base.css">
+<style>
+.popwin{left:40px;top:10px;width:322px;height:318px;border-radius:10px}
+.popwin iframe{border:0;width:320px;height:316px;display:block}
+.sites{position:absolute;left:470px;top:0;width:700px}
+.sites h2{font-size:22px;font-weight:600;letter-spacing:-0.02em;margin-bottom:18px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 28px}
+.site{display:flex;align-items:center;gap:12px;font-size:18px;color:#27272a;padding:10px 0;border-bottom:1px solid #e4e4e7}
+.site .chk{flex:none;width:22px;height:22px;border-radius:50%;background:#16a34a;color:#fff;display:flex;align-items:center;justify-content:center}
+.site .chk svg{width:13px;height:13px}
+.more{margin-top:22px;font-size:16px;color:#52525b;line-height:1.5}
+.limit{position:absolute;left:470px;top:330px;font-size:15px;color:#71717a;line-height:1.5;max-width:700px}
+</style></head><body><div class="wrap">
+<h1>Works where you already write</h1>
+<p class="sub">Ready the moment the page loads on the sites below. On any other site it only touches the page when you ask it to.</p>
+<div class="stage">
+  <div class="win popwin"><iframe src="ext/popup.html"></iframe></div>
+  <div class="sites">
+    <h2>Supported sites</h2>
+    <div class="grid">
+      <div class="site"><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>Gmail</div>
+      <div class="site"><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>Outlook on the web</div>
+      <div class="site"><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>Slack</div>
+      <div class="site"><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>LinkedIn messages and comments</div>
+      <div class="site"><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>Facebook and Messenger</div>
+      <div class="site"><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>Most ordinary text boxes and editors</div>
+    </div>
+    <p class="more">Keyboard shortcut <kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>E</kbd> on Windows, Linux and ChromeOS, <kbd>⌘</kbd> <kbd>Shift</kbd> <kbd>E</kbd> on Mac. Change it any time from the popup.</p>
+  </div>
+  <p class="limit">Text leaves your browser only when you ask for a correction. Your text is not stored and is never tied to you. No account, no sign in, no ads, no analytics.</p>
+</div></div></body></html>
