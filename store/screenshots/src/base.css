@@ -1,0 +1,15 @@
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1280px;height:800px;overflow:hidden}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#18181b;background:linear-gradient(180deg,#fafafa 0%,#eef0f3 100%);-webkit-font-smoothing:antialiased}
+.wrap{padding:56px 72px 0;height:100%;display:flex;flex-direction:column}
+h1{font-size:40px;font-weight:700;letter-spacing:-0.03em;line-height:1.15}
+.sub{margin-top:12px;font-size:19px;color:#52525b;max-width:900px;line-height:1.45}
+.stage{flex:1;position:relative;margin-top:40px}
+.win{position:absolute;background:#fff;border-radius:12px;box-shadow:0 1px 2px rgba(0,0,0,.06),0 24px 60px rgba(0,0,0,.16);border:1px solid #e4e4e7;overflow:hidden}
+.bar{height:40px;background:#f4f4f5;border-bottom:1px solid #e4e4e7;display:flex;align-items:center;padding:0 14px;gap:8px}
+.dot{width:12px;height:12px;border-radius:50%;background:#d4d4d8}
+.bar .title{margin-left:12px;font-size:13px;color:#71717a;font-weight:500}
+.sel{background:#b4d5fe;color:#18181b;border-radius:2px;padding:1px 0}
+.pill{display:inline-flex;align-items:center;gap:8px;background:rgba(23,23,26,.95);color:rgba(255,255,255,.92);padding:9px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.09);box-shadow:0 8px 24px rgba(0,0,0,.18);font-size:13px;white-space:nowrap}
+.spin{width:12px;height:12px;border-radius:50%;border:1.5px solid rgba(255,255,255,.25);border-top-color:rgba(255,255,255,.85)}
+kbd{font-family:'SF Mono',Menlo,Consolas,monospace;font-size:13px;font-weight:600;background:#f4f4f5;border:1px solid #d4d4d8;box-shadow:0 1px 0 #d4d4d8;border-radius:5px;padding:3px 8px;color:#18181b}

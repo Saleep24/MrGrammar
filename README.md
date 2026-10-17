@@ -62,6 +62,8 @@ Build the store package:
 npm run package
 ```
 
+The store listing text, permission justifications and screenshots live in `store/`.
+
 Bug reports and ideas are welcome through the [issue templates](https://github.com/Saleep24/MrGrammar/issues/new/choose).
 
 ## License
