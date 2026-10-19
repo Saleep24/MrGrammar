@@ -32,6 +32,7 @@ function play() {
 
 function restart() {
   clearTimeout(timer);
+  if (reduce) { demo.dataset.state = 3; return; }
   step = 0;
   play();
 }

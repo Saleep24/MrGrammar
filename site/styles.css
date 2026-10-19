@@ -101,7 +101,8 @@ u{text-decoration:underline wavy #e0362e;text-decoration-skip-ink:none;text-unde
 .status-pill.static{position:static;transform:none;opacity:1}
 .demo[data-state="2"] .status-pill,.demo[data-state="3"] .status-pill{opacity:1;transform:translate(-50%,0)}
 .demo[data-state="3"] .status-pill{background:var(--green-ink)}
-.demo[data-state="3"] .spin{display:none}
+.demo[data-state="3"] .spin,.demo[data-state="3"] .pill-busy,.pill-done{display:none}
+.demo[data-state="3"] .pill-done{display:inline}
 .spin{width:12px;height:12px;border-radius:50%;border:1.5px solid rgba(255,255,255,.25);border-top-color:rgba(255,255,255,.9);animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .kbd-hint{position:absolute;right:-8px;top:-18px;display:flex;gap:4px;opacity:0;transform:translateY(6px);transition:opacity .25s,transform .25s}
@@ -160,7 +161,7 @@ kbd.big{font-size:15px;padding:8px 14px;border-radius:9px}
 .reviews{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:48px;margin-bottom:36px}
 .review{background:#fff;border-radius:var(--radius);padding:28px;display:flex;flex-direction:column;gap:22px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
 .review blockquote{font-size:17px;line-height:1.55;letter-spacing:-.01em}
-.review blockquote::before{content:"“";display:block;font-family:var(--serif);font-size:44px;line-height:.6;color:var(--blue);margin-bottom:12px}
+.review blockquote::before{content:"“";display:block;font-size:44px;line-height:.6;color:var(--blue);margin-bottom:12px}
 .review figcaption{display:flex;align-items:center;gap:12px;margin-top:auto;font-size:14px}
 .review figcaption strong{display:block;font-weight:600}
 .review figcaption small{color:var(--ink-3);font-size:13px}
@@ -189,9 +190,8 @@ kbd.big{font-size:15px;padding:8px 14px;border-radius:9px}
 .footer-links a:hover{color:var(--ink)}
 .footer-copy{color:var(--ink-3)}
 
-.reveal{opacity:0;transform:translateY(18px);transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1)}
-.reveal.in{opacity:1;transform:none}
-.no-js .reveal{opacity:1;transform:none}
+.js .reveal{opacity:0;transform:translateY(18px);transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1)}
+.js .reveal.in{opacity:1;transform:none}
 
 @media (max-width:900px){
   .steps,.bento,.reviews{grid-template-columns:1fr 1fr}
