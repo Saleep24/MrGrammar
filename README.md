@@ -2,7 +2,7 @@
 
 Free grammar correction in any text box in your browser. Highlight the text, right-click or press a shortcut, and the corrected version replaces it in place. No account, no API key, nothing to set up.
 
-[Install from the Chrome Web Store](https://chromewebstore.google.com/detail/mrgrammar/jpecnjmadbehcdpnlfdoobfbohajpdel)
+[Install from the Chrome Web Store](https://chromewebstore.google.com/detail/mrgrammar/jpecnjmadbehcdpnlfdoobfbohajpdel) · [Landing site](https://saleep24.github.io/MrGrammar/)
 
 ## How it works
 
@@ -63,6 +63,8 @@ npm run package
 ```
 
 The store listing text, permission justifications and screenshots live in `store/`.
+
+The landing site is plain HTML, CSS and JavaScript in `site/`, with no build step. Open `site/index.html` in a browser to preview it. It is deployed to GitHub Pages by `.github/workflows/pages.yml` on every push to `main` that touches `site/`. Regenerate the social share image with `site/og/render.sh` after changing the hero copy.
 
 Bug reports and ideas are welcome through the [issue templates](https://github.com/Saleep24/MrGrammar/issues/new/choose).
 
