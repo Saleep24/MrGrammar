@@ -2,7 +2,7 @@
 
 Free grammar correction in any text box in your browser. Highlight the text, right-click or press a shortcut, and the corrected version replaces it in place. No account, no API key, nothing to set up.
 
-[Install from the Chrome Web Store](https://chromewebstore.google.com/detail/mrgrammar/jpecnjmadbehcdpnlfdoobfbohajpdel) · [Landing site](https://saleep24.github.io/MrGrammar/)
+[Install from the Chrome Web Store](https://chromewebstore.google.com/detail/mrgrammar/jpecnjmadbehcdpnlfdoobfbohajpdel) · [Landing site](https://mrgrammar.me/)
 
 ## How it works
 
