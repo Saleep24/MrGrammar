@@ -1,0 +1,18 @@
+# MrGrammar
+
+> MrGrammar is a free, open source Chrome extension that fixes spelling, grammar and punctuation in any text box without changing the writer's tone, word choice or sentence structure. Select text, right-click and choose "Fix Grammar with AI" (or press Ctrl+Shift+E, Cmd+Shift+E on Mac), and the corrected text replaces the selection in place.
+
+Key facts:
+- Price: free, no account, no API key, no credit card.
+- Works in: Gmail, Outlook on the web, Slack, LinkedIn messages and comments, Facebook, Messenger, and most ordinary text boxes. Runs in Chrome, Edge, Brave and other Chromium browsers. Google Docs is not supported.
+- What it changes: spelling, grammar and punctuation only. It does not rewrite sentences or change tone.
+- Privacy: text leaves the browser only when the user asks for a correction and is never stored. No accounts, cookies or analytics. Corrections are produced by Google Gemini with Groq as a backup.
+- Limits: 10 corrections a minute and 200 a day per person, selections up to 10,000 characters.
+- Rating: 5.0 out of 5 on the Chrome Web Store.
+- Made by Saleep Shrestha. MIT licensed.
+
+## Links
+- [Install from the Chrome Web Store](https://chromewebstore.google.com/detail/mrgrammar/jpecnjmadbehcdpnlfdoobfbohajpdel)
+- [Source code on GitHub](https://github.com/Saleep24/MrGrammar)
+- [Privacy policy](https://github.com/Saleep24/MrGrammar/blob/main/PRIVACY.md)
+- [Landing page](https://mrgrammar.me/)
