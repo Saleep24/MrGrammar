@@ -3,23 +3,151 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MrGrammar - Fix grammar anywhere you type</title>
-  <meta name="description" content="Free Chrome extension that fixes spelling, grammar and punctuation in any text box. Select, right-click, done. No account, no setup, open source.">
+  <title>MrGrammar: free AI grammar fixer for Chrome that keeps your tone</title>
+  <meta name="description" content="MrGrammar is a free Chrome extension that fixes spelling, grammar and punctuation in any text box, including Gmail, Outlook, Slack and LinkedIn, without changing your tone. No account, no setup, open source.">
   <link rel="icon" href="assets/favicon.png" type="image/png">
   <link rel="canonical" href="https://mrgrammar.me/">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="MrGrammar - Fix grammar anywhere you type">
+  <meta property="og:title" content="MrGrammar: free grammar fixer for Chrome that keeps your tone">
   <meta property="og:description" content="Free Chrome extension that fixes spelling, grammar and punctuation in any text box. Select, right-click, done.">
   <meta property="og:url" content="https://mrgrammar.me/">
   <meta property="og:image" content="https://mrgrammar.me/assets/og.png">
+  <meta property="og:image:alt" content="MrGrammar: fix grammar anywhere you type">
+  <meta property="og:site_name" content="MrGrammar">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="MrGrammar - Fix grammar anywhere you type">
+  <meta name="twitter:title" content="MrGrammar: free grammar fixer for Chrome that keeps your tone">
   <meta name="twitter:description" content="Free Chrome extension that fixes spelling, grammar and punctuation in any text box. Select, right-click, done.">
   <meta name="twitter:image" content="https://mrgrammar.me/assets/og.png">
   <meta name="theme-color" content="#ffffff">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..800&display=swap" rel="stylesheet">
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareApplication",
+      "name": "MrGrammar",
+      "url": "https://mrgrammar.me/",
+      "applicationCategory": "BrowserApplication",
+      "operatingSystem": "Chrome, Edge, Brave",
+      "browserRequirements": "Requires a Chromium browser",
+      "description": "Free Chrome extension that fixes spelling, grammar and punctuation in any text box without changing your tone. Works in Gmail, Outlook, Slack, LinkedIn, Facebook and Messenger.",
+      "installUrl": "https://chromewebstore.google.com/detail/mrgrammar/jpecnjmadbehcdpnlfdoobfbohajpdel",
+      "downloadUrl": "https://chromewebstore.google.com/detail/mrgrammar/jpecnjmadbehcdpnlfdoobfbohajpdel",
+      "softwareVersion": "3.1",
+      "license": "https://github.com/Saleep24/MrGrammar/blob/main/LICENSE",
+      "isAccessibleForFree": true,
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "5",
+        "bestRating": "5",
+        "ratingCount": "6",
+        "url": "https://chromewebstore.google.com/detail/mrgrammar/jpecnjmadbehcdpnlfdoobfbohajpdel/reviews"
+      },
+      "author": {
+        "@type": "Person",
+        "name": "Saleep Shrestha",
+        "url": "https://github.com/Saleep24"
+      },
+      "dateModified": "2026-10-19",
+      "image": "https://mrgrammar.me/assets/og.png",
+      "sameAs": [
+        "https://github.com/Saleep24/MrGrammar",
+        "https://chromewebstore.google.com/detail/mrgrammar/jpecnjmadbehcdpnlfdoobfbohajpdel"
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Is it really free?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. There is no plan to upgrade to and no key to bring. The free service allows 10 corrections a minute and 200 a day per person, which is plenty for a day of email and chat."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What does it change, and what does it leave alone?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "It fixes spelling, grammar and punctuation. It does not rewrite your sentences, swap your words or change your tone."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Where does it work?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Gmail, Outlook on the web, Slack, LinkedIn messages and comments, Facebook and Messenger are supported out of the box, plus most websites with ordinary text boxes, comment fields or editors. It runs in Chrome, Edge, Brave and other Chromium browsers."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How is MrGrammar different from other grammar tools?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "It only corrects. Most AI writing tools rewrite your sentence, change the tone or suggest a different word. MrGrammar fixes the spelling, grammar and punctuation and leaves everything else as you wrote it. It is also free, needs no account, and puts the fix straight into the text box you are typing in."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is MrGrammar an AI grammar checker?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. Corrections come from Google Gemini, with Groq as a backup, through a small server the project runs. The extension holds no keys and you do not need your own."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Does it work in Google Docs?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Not yet. Docs draws its text on a canvas rather than as regular page text, so there is nothing for the extension to read. You will see a short message if you try."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What happens to my text?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Nothing leaves your browser until you ask for a correction. At that moment the selected text goes over an encrypted connection to a small server, which asks Google Gemini for the correction, with Groq as a backup. Your text is never stored or logged. The server only keeps a request count per network address for up to 24 hours to enforce the free limit, and that count is never linked to any text. Full privacy policy."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I change the keyboard shortcut?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. Open the extension popup and choose Change, or go to chrome://extensions/shortcuts and set any combination you like."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Something did not work. Where do I report it?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Open an issue on GitHub. Bug reports and feature ideas are both welcome."
+          }
+        }
+      ]
+    },
+    {
+      "@type": "WebSite",
+      "name": "MrGrammar",
+      "url": "https://mrgrammar.me/"
+    }
+  ]
+}
+  </script>
   <link rel="stylesheet" href="styles.css">
   <script>document.documentElement.classList.add("js")</script>
 </head>
@@ -134,7 +262,7 @@
     <section class="section" id="how">
       <div class="wrap">
         <p class="eyebrow reveal">How it works</p>
-        <h2 class="h2 reveal">Fixed in three steps.</h2>
+        <h2 class="h2 reveal">How does MrGrammar work?</h2>
         <p class="lead reveal">You never leave the page. Highlight what you wrote, click once, and the fix shows up right where you were typing.</p>
         <ol class="steps">
           <li class="step reveal">
@@ -159,7 +287,7 @@
     <section class="section section-gray">
       <div class="wrap">
         <p class="eyebrow reveal">What gets fixed</p>
-        <h2 class="h2 reveal">Mistakes corrected.<br>Your voice left alone.</h2>
+        <h2 class="h2 reveal">What gets fixed,<br>and what stays yours?</h2>
         <p class="lead reveal">Spelling, grammar and punctuation are fixed. Word choice, tone and style stay exactly as you wrote them.</p>
         <div class="compare reveal">
           <div class="compare-card">
@@ -212,7 +340,7 @@
     <section class="section" id="features">
       <div class="wrap">
         <p class="eyebrow reveal">Features</p>
-        <h2 class="h2 reveal">Everything you need.<br>Nothing you have to manage.</h2>
+        <h2 class="h2 reveal">Why MrGrammar?</h2>
         <div class="bento">
           <article class="card card-wide card-blue reveal">
             <div class="card-text">
@@ -280,7 +408,7 @@
     <section class="section" id="faq">
       <div class="wrap wrap-narrow">
         <p class="eyebrow reveal">FAQ</p>
-        <h2 class="h2 reveal">Questions, answered.</h2>
+        <h2 class="h2 reveal">Frequently asked questions</h2>
         <div class="faq reveal">
           <details open>
             <summary>Is it really free?</summary>
@@ -293,6 +421,14 @@
           <details>
             <summary>Where does it work?</summary>
             <p>Gmail, Outlook on the web, Slack, LinkedIn messages and comments, Facebook and Messenger are supported out of the box, plus most websites with ordinary text boxes, comment fields or editors. It runs in Chrome, Edge, Brave and other Chromium browsers.</p>
+          </details>
+          <details>
+            <summary>How is MrGrammar different from other grammar tools?</summary>
+            <p>It only corrects. Most AI writing tools rewrite your sentence, change the tone or suggest a different word. MrGrammar fixes the spelling, grammar and punctuation and leaves everything else as you wrote it. It is also free, needs no account, and puts the fix straight into the text box you are typing in.</p>
+          </details>
+          <details>
+            <summary>Is MrGrammar an AI grammar checker?</summary>
+            <p>Yes. Corrections come from Google Gemini, with Groq as a backup, through a small server the project runs. The extension holds no keys and you do not need your own.</p>
           </details>
           <details>
             <summary>Does it work in Google Docs?</summary>
@@ -339,7 +475,7 @@
         <a href="https://github.com/Saleep24/MrGrammar/blob/main/PRIVACY.md" target="_blank" rel="noopener">Privacy</a>
         <a href="https://github.com/Saleep24/MrGrammar/issues" target="_blank" rel="noopener">Support</a>
       </nav>
-      <small class="footer-copy">© <span id="year"></span> MrGrammar. MIT licensed.</small>
+      <small class="footer-copy">© <span id="year"></span> MrGrammar. MIT licensed. Updated <time datetime="2026-10-19">October 2026</time>.</small>
     </div>
   </footer>
 
