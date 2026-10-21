@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "MrGrammar",
-    "version": "3.1",
+    "version": "3.2",
     "description": "Free AI-powered grammar correction directly in your browser. Compatible with Gmail, LinkedIn, Slack, and many more.",
     "permissions": ["contextMenus", "activeTab", "scripting", "storage"],
     "host_permissions": [

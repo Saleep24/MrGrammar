@@ -4,9 +4,66 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('change-shortcut').addEventListener('click', openShortcutSettings);
   document.getElementById('reset-stats').addEventListener('click', resetStatistics);
   document.getElementById('export-stats').addEventListener('click', exportStatistics);
+  document.getElementById('access-code-form').addEventListener('submit', saveAccessCode);
+  document.getElementById('remove-code').addEventListener('click', removeAccessCode);
   showShortcut();
   loadStatistics();
+  showAccessCodeState();
 });
+
+async function showAccessCodeState() {
+  const { accessCode } = await chrome.storage.local.get(['accessCode']);
+  const saved = Boolean(accessCode);
+  document.getElementById('remove-code').hidden = !saved;
+  document.getElementById('code-note').textContent = saved ? 'A code is saved on this device. Limits are off.' : '';
+}
+
+// Only keeps the code if the server confirms it, so a typo never sits in storage
+async function saveAccessCode(event) {
+  event.preventDefault();
+  const input = document.getElementById('access-code');
+  const button = document.getElementById('save-code');
+  const code = input.value.trim();
+  if (!code || button.disabled) return;
+  button.disabled = true;
+  button.classList.add('loading');
+  showCodeStatus('Checking the code...', 'info');
+  try {
+    const response = await fetch(PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Access-Code': code },
+      body: JSON.stringify({ text: 'Hello.' }),
+      signal: AbortSignal.timeout(15000)
+    });
+    const data = response.ok ? await response.json() : {};
+    if (data.unlimited) {
+      await chrome.storage.local.set({ accessCode: code });
+      input.value = '';
+      showCodeStatus('Code accepted. Limits are off on this device.', 'success');
+    } else if (response.ok || response.status === 429) {
+      showCodeStatus('That code was not accepted.', 'error');
+    } else {
+      showCodeStatus('Could not reach the service. Try again in a moment.', 'error');
+    }
+  } catch (error) {
+    showCodeStatus('Could not reach the service. Try again in a moment.', 'error');
+    console.warn('Access code check failed', error);
+  } finally {
+    button.disabled = false;
+    button.classList.remove('loading');
+    showAccessCodeState();
+  }
+}
+
+async function removeAccessCode() {
+  await chrome.storage.local.remove('accessCode');
+  showCodeStatus('Code removed.', 'success');
+  showAccessCodeState();
+}
+
+function showCodeStatus(message, type) {
+  showStatus(message, type, 'code-status');
+}
 
 async function showShortcut() {
   const bound = await readFixGrammarShortcut();
@@ -76,16 +133,16 @@ function exportStatistics() {
   });
 }
 
-let hideStatusTimer;
-function showStatus(message, type) {
-  const statusDiv = document.getElementById('status');
-  clearTimeout(hideStatusTimer);
+const hideStatusTimers = {};
+function showStatus(message, type, id = 'status') {
+  const statusDiv = document.getElementById(id);
+  clearTimeout(hideStatusTimers[id]);
   statusDiv.textContent = '';
   statusDiv.className = 'status-message ' + type;
   statusDiv.style.display = 'block';
   // Set text after render so the live region announces the change
   setTimeout(() => { statusDiv.textContent = message; }, 10);
   if (type === 'success') {
-    hideStatusTimer = setTimeout(() => { statusDiv.style.display = 'none'; }, 5000);
+    hideStatusTimers[id] = setTimeout(() => { statusDiv.style.display = 'none'; }, 5000);
   }
 }
