@@ -54,6 +54,28 @@
 
       <section class="config-section">
         <div class="section-header">
+          <h2 class="section-title">Access Code</h2>
+          <p class="section-description">Have a code from the maintainer? Save it here to lift the daily limit. It stays on this device.</p>
+        </div>
+
+        <form id="access-code-form" class="code-form" autocomplete="off">
+          <label for="access-code" class="visually-hidden">Access code</label>
+          <input type="password" id="access-code" class="code-input" placeholder="Paste your code" spellcheck="false" autocomplete="off">
+          <div class="form-actions">
+            <button type="submit" id="save-code" class="btn btn-secondary">
+              <span class="btn-text">Save Code</span>
+            </button>
+            <button type="button" id="remove-code" class="btn btn-outline" hidden>
+              <span class="btn-text">Remove Code</span>
+            </button>
+          </div>
+        </form>
+        <p class="code-note" id="code-note"></p>
+        <div id="code-status" class="status-message" role="status" style="display: none;"></div>
+      </section>
+
+      <section class="config-section">
+        <div class="section-header">
           <h2 class="section-title">Usage Statistics</h2>
           <p class="section-description">Counts are stored only on this device</p>
         </div>

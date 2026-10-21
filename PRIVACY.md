@@ -30,7 +30,7 @@ We do not sell or share your data with anyone else.
 - Read and change data on the listed sites (Gmail, Outlook, Slack, LinkedIn, Facebook, Messenger): needed to read your selection and write the corrected text back into those editors.
 - Access to the page you are on when you invoke the extension: on any other website, the extension only touches the page after you right-click or press the shortcut on it.
 - Context menus and keyboard shortcuts: to offer the "Fix Grammar with AI" command.
-- Local storage: to keep the usage counts described above on your device.
+- Local storage: to keep the usage counts described above on your device, and an optional access code if you were given one. The code stays on your device and is sent only to the MrGrammar proxy with each correction.
 
 ## Changes and contact
 

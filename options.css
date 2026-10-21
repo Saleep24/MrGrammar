@@ -163,6 +163,10 @@ body {
   color: var(--color-text-primary);
 }
 
+.btn[hidden] {
+  display: none;
+}
+
 .btn-secondary:hover {
   background: var(--color-bg-elevated);
   border-color: var(--color-border-hover);
@@ -251,6 +255,42 @@ body {
 .shortcut-card .form-actions {
   margin-top: var(--space-4);
   justify-content: flex-start;
+}
+
+.code-form {
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.code-input {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  font-family: inherit;
+  font-size: var(--font-size-base);
+}
+
+.code-input:focus {
+  outline: 2px solid var(--color-border-hover);
+  outline-offset: 1px;
+}
+
+.code-form .form-actions {
+  margin-top: var(--space-4);
+}
+
+.code-note {
+  margin-top: var(--space-4);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.code-note:empty {
+  display: none;
 }
 
 .stats-grid {

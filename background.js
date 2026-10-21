@@ -401,14 +401,15 @@ chrome.runtime.onInstalled.addListener(() => {
   }
 
   async function fixGrammarWithGemini(text) {
+    const headers = { "Content-Type": "application/json" };
+    const { accessCode } = await chrome.storage.local.get(["accessCode"]).catch(() => ({}));
+    if (accessCode) headers["X-Access-Code"] = accessCode;
     let response;
     try {
       response = await fetch(PROXY_URL, {
         method: "POST",
         signal: AbortSignal.timeout(35000),
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers,
         body: JSON.stringify({ text })
       });
     } catch (error) {

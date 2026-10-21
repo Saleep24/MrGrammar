@@ -2,7 +2,7 @@ import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import handler from '../proxy/api/grammar.js';
 
-const ENV_KEYS = ['GEMINI_API_KEY', 'GROQ_API_KEY', 'KV_REST_API_URL', 'KV_REST_API_TOKEN'];
+const ENV_KEYS = ['GEMINI_API_KEY', 'GROQ_API_KEY', 'KV_REST_API_URL', 'KV_REST_API_TOKEN', 'ACCESS_CODE_HASH'];
 let calls;
 
 function reply(status, body) {
@@ -99,7 +99,7 @@ test('returns the Gemini correction and sends the user text', async () => {
   const r = res();
   await handler(req(), r);
   assert.equal(r.statusCode, 200);
-  assert.deepEqual(r.body, { correctedText: 'I went to the store.', provider: 'gemini' });
+  assert.deepEqual(r.body, { correctedText: 'I went to the store.', provider: 'gemini', unlimited: false });
   const gemini = calls.find(c => c.url.includes('generativelanguage'));
   assert.ok(gemini.body.contents[0].parts[0].text.includes('I goes to the store.'));
 });
@@ -134,7 +134,7 @@ test('leaves text unchanged when the provider returns nothing', async () => {
   const r = res();
   await handler(req(), r);
   assert.equal(r.statusCode, 200);
-  assert.deepEqual(r.body, { correctedText: 'I goes to the store.', provider: 'none' });
+  assert.deepEqual(r.body, { correctedText: 'I goes to the store.', provider: 'none', unlimited: false });
 });
 
 test('skips rate limiting when Redis is not configured', async () => {
@@ -182,4 +182,51 @@ test('uses the first address in x-forwarded-for for the limit key', async () => 
   const redis = calls.find(c => c.url.includes('/pipeline'));
   assert.ok(redis.body[0][1].includes('1.2.3.4'));
   assert.ok(!redis.body[0][1].includes('10.0.0.1'));
+});
+
+const CODE = 'test-access-code-1234';
+const CODE_HASH = '31bb56478b106542c00f81e2b9a105c72f7bdbbdf014eccb142e59602bfffd8d';
+
+test('a valid access code skips the rate limit and says so', async () => {
+  process.env.KV_REST_API_URL = 'https://redis';
+  process.env.KV_REST_API_TOKEN = 't';
+  process.env.ACCESS_CODE_HASH = CODE_HASH;
+  mockFetch({ gemini: () => geminiOk('ok'), groq: () => groqOk('x'), redis: () => redisCounts(999, 999, 999) });
+  const r = res();
+  await handler(req({ headers: { 'x-access-code': CODE } }), r);
+  assert.equal(r.statusCode, 200);
+  assert.equal(r.body.unlimited, true);
+  assert.ok(!calls.some(c => c.url.includes('/pipeline')));
+});
+
+test('a wrong access code behaves exactly like no code', async () => {
+  process.env.KV_REST_API_URL = 'https://redis';
+  process.env.KV_REST_API_TOKEN = 't';
+  process.env.ACCESS_CODE_HASH = CODE_HASH;
+  mockFetch({ gemini: () => geminiOk('ok'), groq: () => groqOk('x'), redis: () => redisCounts(999, 1, 1) });
+  const r = res();
+  await handler(req({ headers: { 'x-access-code': 'nope' } }), r);
+  assert.equal(r.statusCode, 429);
+  assert.equal(r.body.unlimited, undefined);
+});
+
+test('access codes are ignored when no hash is configured', async () => {
+  process.env.KV_REST_API_URL = 'https://redis';
+  process.env.KV_REST_API_TOKEN = 't';
+  mockFetch({ gemini: () => geminiOk('ok'), groq: () => groqOk('x'), redis: () => redisCounts(999, 1, 1) });
+  const r = res();
+  await handler(req({ headers: { 'x-access-code': CODE } }), r);
+  assert.equal(r.statusCode, 429);
+});
+
+test('ordinary requests report unlimited as false', async () => {
+  const r = res();
+  await handler(req(), r);
+  assert.equal(r.body.unlimited, false);
+});
+
+test('preflight allows the access code header', async () => {
+  const r = res();
+  await handler(req({ method: 'OPTIONS' }), r);
+  assert.match(r.headers['Access-Control-Allow-Headers'], /X-Access-Code/);
 });

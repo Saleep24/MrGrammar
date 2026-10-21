@@ -2,6 +2,8 @@
 // API keys are stored as Vercel environment variables (secrets), never exposed to clients.
 // Primary: Gemini 2.5 Flash Lite | Fallback: Groq (Llama)
 
+import { createHash, timingSafeEqual } from "node:crypto";
+
 const GEMINI_MODEL = "gemini-2.5-flash-lite";
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
@@ -48,6 +50,15 @@ Output: "I wanna grab some food cuz I'm hungry"
 (Only fixed capitalization of "I'm" - preserved casual tone and slang)
 
 Return ONLY the corrected text with no explanations, comments, or quotation marks.`;
+
+// True only when the sha256 of the sent code matches ACCESS_CODE_HASH
+function hasValidAccessCode(code) {
+  const expected = process.env.ACCESS_CODE_HASH;
+  if (!expected || typeof code !== "string" || !code) return false;
+  const actual = createHash("sha256").update(code).digest("hex");
+  if (actual.length !== expected.length) return false;
+  return timingSafeEqual(Buffer.from(actual), Buffer.from(expected));
+}
 
 function isAllowedOrigin(origin) {
   if (!origin) return false;
@@ -170,7 +181,7 @@ export default async function handler(req, res) {
     res.setHeader("Access-Control-Allow-Origin", origin);
   }
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Access-Code");
 
   if (req.method === "OPTIONS") {
     return res.status(200).end();
@@ -189,11 +200,14 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Text too long (max 10,000 characters)" });
   }
 
-  const ip = String(req.headers["x-real-ip"] || req.headers["x-forwarded-for"] || "unknown").split(",")[0].trim();
-  const limit = await checkRateLimit(ip);
-  if (!limit.allowed) {
-    res.setHeader("Retry-After", String(limit.retryAfter));
-    return res.status(429).json({ error: limit.error });
+  const unlimited = hasValidAccessCode(req.headers["x-access-code"]);
+  if (!unlimited) {
+    const ip = String(req.headers["x-real-ip"] || req.headers["x-forwarded-for"] || "unknown").split(",")[0].trim();
+    const limit = await checkRateLimit(ip);
+    if (!limit.allowed) {
+      res.setHeader("Retry-After", String(limit.retryAfter));
+      return res.status(429).json({ error: limit.error });
+    }
   }
 
   // Try Gemini first, fall back to Groq
@@ -211,7 +225,7 @@ export default async function handler(req, res) {
     try {
       const result = await callGemini(text, geminiKey);
       if (result) {
-        return res.status(200).json({ correctedText: result, provider: "gemini" });
+        return res.status(200).json({ correctedText: result, provider: "gemini", unlimited });
       }
       emptyResponse = true;
     } catch (error) {
@@ -224,7 +238,7 @@ export default async function handler(req, res) {
     try {
       const result = await callGroq(text, groqKey);
       if (result) {
-        return res.status(200).json({ correctedText: result, provider: "groq" });
+        return res.status(200).json({ correctedText: result, provider: "groq", unlimited });
       }
       emptyResponse = true;
     } catch (error) {
@@ -234,7 +248,7 @@ export default async function handler(req, res) {
 
   // A provider answered but had nothing to return (e.g. safety block): leave text unchanged
   if (emptyResponse) {
-    return res.status(200).json({ correctedText: text, provider: "none" });
+    return res.status(200).json({ correctedText: text, provider: "none", unlimited });
   }
 
   return res.status(502).json({ error: "All AI providers are currently unavailable. Please try again in a moment." });
