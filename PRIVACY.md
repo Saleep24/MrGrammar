@@ -1,6 +1,6 @@
 # MrGrammar privacy policy
 
-Effective October 5, 2026.
+Effective October 23, 2026.
 
 MrGrammar is a browser extension that corrects the grammar of text you select. This page explains what the extension does with your data. The short version: the text you ask it to fix is sent to our server and on to an AI provider for correction, nothing is stored, and nothing else about you is collected.
 
@@ -31,6 +31,10 @@ We do not sell or share your data with anyone else.
 - Access to the page you are on when you invoke the extension: on any other website, the extension only touches the page after you right-click or press the shortcut on it.
 - Context menus and keyboard shortcuts: to offer the "Fix Grammar with AI" command.
 - Local storage: to keep the usage counts described above on your device, and an optional access code if you were given one. The code stays on your device and is sent only to the MrGrammar proxy with each correction.
+
+## The website
+
+The site at mrgrammar.me uses Umami, a cookie-free analytics service, to count page visits and see which pages and referring sites bring people in. It stores no cookies, no IP addresses and no personal identifiers, and it has nothing to do with the extension or the text you correct.
 
 ## Changes and contact
 
