@@ -32,6 +32,10 @@ We do not sell or share your data with anyone else.
 - Context menus and keyboard shortcuts: to offer the "Fix Grammar with AI" command.
 - Local storage: to keep the usage counts described above on your device, and an optional access code if you were given one. The code stays on your device and is sent only to the MrGrammar proxy with each correction.
 
+## The website
+
+The site at mrgrammar.me uses Umami, a cookie-free analytics service, to count page visits and see which pages and referring sites bring people in. It stores no cookies, no IP addresses and no personal identifiers, and it has nothing to do with the extension or the text you correct.
+
 ## Changes and contact
 
 If this policy changes, the new version will be published at this address with a new effective date. Questions and concerns can be raised at https://github.com/Saleep24/MrGrammar/issues.
