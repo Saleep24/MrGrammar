@@ -1,6 +1,6 @@
 # MrGrammar privacy policy
 
-Effective October 5, 2026.
+Effective October 23, 2026.
 
 MrGrammar is a browser extension that corrects the grammar of text you select. This page explains what the extension does with your data. The short version: the text you ask it to fix is sent to our server and on to an AI provider for correction, nothing is stored, and nothing else about you is collected.
 
