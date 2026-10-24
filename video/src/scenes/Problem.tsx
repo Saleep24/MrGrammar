@@ -1,6 +1,6 @@
 import React from 'react';
 import {AbsoluteFill, interpolate, useCurrentFrame} from 'remotion';
-import {c} from '../tokens';
+import {c, F} from '../tokens';
 import {rise, pop, typed, fadeOut} from '../anim';
 import {SCENES} from '../tokens';
 
@@ -14,12 +14,12 @@ const Card: React.FC<{label: string; children: React.ReactNode; style?: React.CS
 export const Problem: React.FC = () => {
   const f = useCurrentFrame();
   const msg = 'hey can u send me the file when u get a sec, no rush tho';
-  const typedMsg = typed(msg, f, 14, 1.4);
-  const caret = f < 14 + msg.length * 1.4 + 6 && Math.floor(f / 8) % 2 === 0;
+  const typedMsg = typed(msg, f, F(14), 1.4);
+  const caret = f < F(14 + msg.length * 1.4 + 6) && Math.floor(f / 8) % 2 === 0;
   const rewrite = 'Hello, could you please send me the file at your earliest convenience? There is no rush.'.split(' ');
-  const struck = Math.floor(interpolate(f, [84, 110], [0, rewrite.length], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'}));
+  const struck = Math.floor(interpolate(f, [F(84), F(110)], [0, rewrite.length], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'}));
   return (
-    <AbsoluteFill style={{alignItems: 'center', justifyContent: 'center', gap: 36, opacity: fadeOut(f, SCENES.problem - 10)}}>
+    <AbsoluteFill style={{alignItems: 'center', justifyContent: 'center', gap: 36, opacity: fadeOut(f, SCENES.problem - F(10))}}>
       <div style={{fontSize: 88, fontWeight: 700, letterSpacing: '-.035em', lineHeight: 1.02, ...rise(f, 0)}}>Every AI tool rewrites you.</div>
       <Card label="YOU WROTE" style={rise(f, 12)}>
         {typedMsg}<span style={{opacity: caret ? 1 : 0, color: c.blue}}>|</span>

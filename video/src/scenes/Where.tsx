@@ -1,12 +1,12 @@
 import React from 'react';
 import {AbsoluteFill, useCurrentFrame} from 'remotion';
-import {c, SCENES} from '../tokens';
+import {c, SCENES, F} from '../tokens';
 import {rise, pop, fadeOut} from '../anim';
 import {marks, Mark} from '../marks';
 export const Where: React.FC = () => {
   const f = useCurrentFrame();
   return (
-    <AbsoluteFill style={{alignItems: 'center', justifyContent: 'center', gap: 60, opacity: fadeOut(f, SCENES.where - 10)}}>
+    <AbsoluteFill style={{alignItems: 'center', justifyContent: 'center', gap: 60, opacity: fadeOut(f, SCENES.where - F(10))}}>
       <div style={{fontSize: 80, fontWeight: 700, letterSpacing: '-.035em', ...rise(f, 0)}}>Works where you write.</div>
       <div style={{display: 'flex', gap: 28}}>
         {marks.map((m, i) => (

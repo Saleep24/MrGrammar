@@ -1,12 +1,12 @@
 import React from 'react';
 import {AbsoluteFill, useCurrentFrame} from 'remotion';
-import {c, SCENES} from '../tokens';
+import {c, SCENES, F} from '../tokens';
 import {rise, fadeOut} from '../anim';
 const lines = ['Fixes spelling, grammar and punctuation.', 'Keeps your words and your tone.', 'Works in any text box.'];
 export const Promise: React.FC = () => {
   const f = useCurrentFrame();
   return (
-    <AbsoluteFill style={{alignItems: 'center', justifyContent: 'center', opacity: fadeOut(f, SCENES.promise - 10)}}>
+    <AbsoluteFill style={{alignItems: 'center', justifyContent: 'center', opacity: fadeOut(f, SCENES.promise - F(10))}}>
       <div style={{display: 'flex', flexDirection: 'column', gap: 26, width: 1440}}>
         <div style={{color: c.blue, fontSize: 28, fontWeight: 600, ...rise(f, 0)}}>Same message. Just fixed.</div>
         {lines.map((l, i) => (

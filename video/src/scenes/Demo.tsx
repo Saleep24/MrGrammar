@@ -1,6 +1,6 @@
 import React from 'react';
 import {AbsoluteFill, Img, interpolate, spring, staticFile, useCurrentFrame} from 'remotion';
-import {c, FPS, SCENES} from '../tokens';
+import {c, FPS, SCENES, F} from '../tokens';
 import {pop, rise, fadeOut} from '../anim';
 const popSoft = (f: number, d: number) => { const s = spring({frame: f - d, fps: FPS, config: {damping: 14, stiffness: 180}}); return {opacity: 0.45 + 0.55 * Math.min(1, s * 2), transform: `scale(${0.8 + 0.2 * s})`}; };
 
@@ -10,7 +10,7 @@ const after: {t: string; fix?: boolean}[] = [
   {t: 'should have', fix: true}, {t: 'sent'}, {t: 'the'}, {t: 'agenda'}, {t: 'earlier'}, {t: 'so'}, {t: 'everyone'}, {t: 'has', fix: true}, {t: 'time'}, {t: 'to'}, {t: 'prepare.'},
 ];
 // Timeline in frames, local to this scene
-const T = {win: 0, selStart: 30, selEnd: 72, menu: 96, hover: 114, click: 138, fixed: 204};
+const T = {win: 0, selStart: F(30), selEnd: F(72), menu: F(96), hover: F(114), click: F(138), fixed: F(204)};
 
 const Row: React.FC<{label: string; value: string}> = ({label, value}) => (
   <div style={{display: 'flex', gap: 18, padding: '14px 0', borderBottom: `1px solid ${c.line}`, fontSize: 26}}>
@@ -26,15 +26,15 @@ export const Demo: React.FC = () => {
   const hovered = f >= T.hover && f < T.click;
   const busy = f >= T.click && f < T.fixed;
   const done = f >= T.fixed;
-  const spin = (f * 14) % 360;
+  const spin = ((f * 14 * 30) / FPS) % 360;
   // Cursor path: starts low right, moves to end of selection, then to the menu item
   const cx = interpolate(f, [T.selStart, T.selEnd, T.menu, T.hover], [980, 1210, 1210, 1310], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
   const cy = interpolate(f, [T.selStart, T.selEnd, T.menu, T.hover], [560, 612, 612, 742], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
-  const cursorOpacity = interpolate(f, [T.selStart - 10, T.selStart, T.click, T.click + 8], [0, 1, 1, 0], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
+  const cursorOpacity = interpolate(f, [T.selStart - F(10), T.selStart, T.click, T.click + F(8)], [0, 1, 1, 0], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
   const pillIn = spring({frame: f - T.click, fps: FPS, config: {damping: 200}});
 
   return (
-    <AbsoluteFill style={{alignItems: 'center', justifyContent: 'center', opacity: fadeOut(f, SCENES.demo - 10)}}>
+    <AbsoluteFill style={{alignItems: 'center', justifyContent: 'center', opacity: fadeOut(f, SCENES.demo - F(10))}}>
       <div style={{width: 1240, background: '#fff', borderRadius: 24, boxShadow: '0 30px 80px rgba(0,0,0,.14)', border: `1px solid ${c.line}`, overflow: 'hidden', opacity: winIn, transform: `translateY(${(1 - winIn) * 40}px) scale(${0.96 + 0.04 * winIn})`}}>
         <div style={{display: 'flex', alignItems: 'center', gap: 10, padding: '16px 22px', background: c.card, borderBottom: `1px solid ${c.line}`}}>
           {['#ff5f57', '#febc2e', '#28c840'].map((col) => <span key={col} style={{width: 14, height: 14, borderRadius: 7, background: col}} />)}
@@ -52,7 +52,7 @@ export const Demo: React.FC = () => {
               {done && after.map((w, i) => (
                 <span key={i}>
                   {w.fix ? (
-                    <span style={{display: 'inline-block', background: c.greenSoft, color: c.greenInk, borderRadius: 6, padding: '0 6px', ...popSoft(f, T.fixed + after.slice(0, i).filter((x) => x.fix).length * 4)}}>{w.t}</span>
+                    <span style={{display: 'inline-block', background: c.greenSoft, color: c.greenInk, borderRadius: 6, padding: '0 6px', ...popSoft(f, T.fixed + F(after.slice(0, i).filter((x) => x.fix).length * 4))}}>{w.t}</span>
                   ) : w.t}
                   {i < after.length - 1 ? ' ' : ''}
                 </span>
@@ -65,7 +65,7 @@ export const Demo: React.FC = () => {
       </div>
 
       {showMenu && (
-        <div style={{position: 'absolute', left: 1210, top: 600, width: 330, background: '#fff', borderRadius: 14, boxShadow: '0 16px 50px rgba(0,0,0,.22)', border: `1px solid ${c.line}`, padding: 8, fontSize: 24, ...pop(f, T.menu)}}>
+        <div style={{position: 'absolute', left: 1210, top: 600, width: 330, background: '#fff', borderRadius: 14, boxShadow: '0 16px 50px rgba(0,0,0,.22)', border: `1px solid ${c.line}`, padding: 8, fontSize: 24, ...pop(f, (T.menu * 30) / FPS)}}>
           {['Copy', 'Paste'].map((t) => <div key={t} style={{padding: '10px 16px', color: c.ink2}}>{t}</div>)}
           <div style={{height: 1, background: c.line, margin: '6px 4px'}} />
           <div style={{display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px', borderRadius: 10, background: hovered ? c.blue : 'transparent', color: hovered ? '#fff' : c.ink, fontWeight: 600}}>
@@ -88,7 +88,7 @@ export const Demo: React.FC = () => {
       )}
 
       {showMenu && (
-        <div style={{position: 'absolute', top: 60, right: 90, display: 'flex', gap: 8, ...rise(f, T.menu + 6)}}>
+        <div style={{position: 'absolute', top: 60, right: 90, display: 'flex', gap: 8, ...rise(f, (T.menu * 30) / FPS + 6)}}>
           <span style={{fontSize: 22, color: c.ink2, marginRight: 8, alignSelf: 'center'}}>or press</span>
           {['⌘', '⇧', 'E'].map((k) => <kbd key={k} style={{fontSize: 24, fontWeight: 600, background: '#fff', border: '1px solid #d2d2d7', boxShadow: '0 2px 0 #d2d2d7', borderRadius: 8, padding: '6px 14px'}}>{k}</kbd>)}
         </div>
