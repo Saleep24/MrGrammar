@@ -242,7 +242,7 @@ kbd.big{font-size:15px;padding:8px 14px;border-radius:9px}
   .rating{position:static}
   .story-grid{grid-template-columns:1fr}
 }
-@media (max-width:760px){
+@media (min-width:641px) and (max-width:760px){
   .brand span{display:none}
   .nav-links a[href*="github"]{display:none}
 }
