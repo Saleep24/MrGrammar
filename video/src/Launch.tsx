@@ -6,8 +6,9 @@ import {layout} from './layout';
 import {Cursor, Key} from './cursor';
 import {Gmail, Menu, Rewrite, Slack, Tile, Pill, G, TILES} from './scenes/content';
 
-export const AUDIO: string | null = null;
+const AUDIO = 'audio/launch-track.mp3';
 
+// Seconds. The *Content keys lead their morph by two frames so the swap hides under the motion.
 const T = {
   cursorIn: 0.3, selStart: 1.0, selEnd: 1.9, rclick: 2.0, menuIn: 2.05, hover: 2.75, click: 2.9, menuOut: 3.0,
   pill1: 3.05, swap1: 3.6, done1: 3.75, pill1Out: 5.0, cap1: 4.2, cap1Out: 7.3,
@@ -32,11 +33,11 @@ export const Launch: React.FC = () => {
   };
   const geo = (k: 'w' | 'h' | 'r' | 'x' | 'y') => track(frame, states.gmail[k], [[T.card, states.card[k], morph], [T.slack, states.slack[k], morph], [T.grid, states.tile[k], morph]]);
   const W = geo('w'), H = geo('h'), R = geo('r'), X = geo('x'), Y = geo('y');
-  const enter = sp(frame, 0, soft);
+  const enter = sp(frame, -0.15, soft);
 
   const step = {x: (L.tile.w + L.tile.gap) * s, y: (L.tile.h + L.tile.gap) * s};
   const gridCenter = {x: states.tile.x + ((L.cols - 1) / 2 - L.center[0]) * step.x, y: states.tile.y + ((L.rows - 1) / 2 - L.center[1]) * step.y};
-  const push = 0.025 * (prog(frame, 4.2, 7.3) - prog(frame, 7.4, 8.0)) + 0.02 * (prog(frame, 16.4, 18.4) - prog(frame, 18.5, 19.2));
+  const push = 0.025 * (prog(frame, T.cap1, T.cap1Out) - prog(frame, T.card, T.card + 0.6)) + 0.02 * (prog(frame, T.swap2 + 0.4, T.grid - 0.1) - prog(frame, T.grid, T.grid + 0.7));
   const camZ = Math.exp(track(frame, 0, [[T.grid, Math.log(L.zoom), morph]])) * (1 + push);
   const camX = track(frame, L.w / 2, [[T.grid, gridCenter.x, morph]]);
   const camY = track(frame, L.h / 2, [[T.grid, gridCenter.y, morph]]);
@@ -45,8 +46,8 @@ export const Launch: React.FC = () => {
 
   const gl = states.gmail.x - states.gmail.w / 2, gt = states.gmail.y - states.gmail.h / 2;
   const P = (lx: number, ly: number): [number, number] => [gl + lx * s, gt + ly * s];
-  const menuX = Math.min(G.menuX, L.dw - G.menuW - 16);
-  const textStart = P(G.textX, G.textY + 24), textEnd = P(G.textX + G.textW, G.textY + 24), item = P(menuX + 70, G.menuY + G.itemY);
+  const menuX = Math.min(G.menuX, L.dw - G.menuW - 16), menuY = L.fmt === 'wide' ? G.menuY : G.menuY + G.lineH + 12;
+  const textStart = P(G.textX, G.textY + 24), textEnd = P(G.textX + G.textW, G.textY + 24), item = P(menuX + G.menuW - 56, menuY + G.itemY);
   const keys: Key[] = [[T.cursorIn, L.w * 0.72, L.h * 0.96], [T.selStart, ...textStart], [T.selEnd, ...textEnd], [T.rclick + 0.15, ...textEnd], [T.hover, ...item]];
   const cursorOpacity = sp(frame, T.cursorIn - 0.2, firm) * (1 - clamp01((frame - S(T.click + 0.3)) / S(0.25)));
   const sel = prog(frame, T.selStart, T.selEnd);
@@ -68,7 +69,6 @@ export const Launch: React.FC = () => {
   const capStyle: React.CSSProperties = {position: 'absolute', left: 0, right: 0, textAlign: 'center', fontSize: L.cap, fontWeight: 600, letterSpacing: '-.02em', color: c.ink};
   const lines = ['Fixes spelling, grammar and punctuation.', 'Keeps your words and your tone.', 'No account needed.'];
   const vEnd = frame >= S(T.end);
-  const endY = L.fmt === 'tall' ? L.h * 0.5 : L.h * 0.5;
 
   return (
     <AbsoluteFill style={{background: c.bg, fontFamily: font, color: c.ink}}>
@@ -87,7 +87,7 @@ export const Launch: React.FC = () => {
               );
             })}
             <div style={{position: 'absolute', left: X - W / 2, top: Y - H / 2, width: W, height: H, borderRadius: R, background: '#fff', overflow: 'hidden', border: '1px solid rgba(0,0,0,.08)', boxShadow: '0 30px 80px rgba(0,0,0,.14)', opacity: enter, transform: `translateY(${(1 - enter) * 30}px)`}}>
-              {content(vGmail, L.dw, <><Gmail frame={frame} sel={sel} swapAt={T.swap1} w={L.dw} />{frame >= S(T.menuIn) && frame < S(T.menuOut + 0.2) && <Menu frame={frame} tin={T.menuIn} tout={T.menuOut} hoverAt={T.hover} x={menuX} />}</>)}
+              {content(vGmail, L.dw, <><Gmail frame={frame} sel={sel} swapAt={T.swap1} w={L.dw} />{frame >= S(T.menuIn) && frame < S(T.menuOut + 0.2) && <Menu frame={frame} tin={T.menuIn} tout={T.menuOut} hoverAt={T.hover} x={menuX} y={menuY} />}</>)}
               {content(vCard, L.cardW, <Rewrite frame={frame} strikeFrom={T.strikeFrom} strikeTo={T.strikeTo} badgeAt={T.badge} w={L.cardW} />)}
               {content(vSlack, L.dw, <Slack frame={frame} typeAt={T.type} selAt={T.sel2} keysAt={T.keys} swapAt={T.swap2} w={L.dw} />)}
               {content(vTile, 820, <Tile frame={frame} i={2} marksAt={T.tileContent + 0.3} />)}
@@ -115,7 +115,7 @@ export const Launch: React.FC = () => {
       )}
       {vEnd && (
         <AbsoluteFill style={{alignItems: 'center', justifyContent: 'center'}}>
-          <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 22 * (L.fmt === 'wide' ? 1 : 0.9), transform: `translateY(${endY - L.h / 2}px)`}}>
+          <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 22 * (L.fmt === 'wide' ? 1 : 0.9)}}>
             <Img src={staticFile('icon.png')} style={{width: 160, height: 160, borderRadius: 40, ...popStyle(sp(frame, T.end, snap))}} />
             <div style={{fontSize: L.fmt === 'wide' ? 96 : 80, fontWeight: 700, letterSpacing: '-.04em', ...visStyle(vis(frame, T.end + 0.15))}}>MrGrammar</div>
             <div style={{fontSize: L.fmt === 'wide' ? 34 : 30, color: c.ink2, textAlign: 'center', maxWidth: L.w - 2 * L.margin, ...visStyle(vis(frame, T.end + 0.3))}}>Grammar fixes in any text box. No account, no setup.</div>

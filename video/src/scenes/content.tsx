@@ -77,12 +77,12 @@ export const Gmail: React.FC<{frame: number; sel: number; swapAt: number; w: num
   );
 };
 
-export const Menu: React.FC<{frame: number; tin: number; tout: number; hoverAt: number; x: number}> = ({frame, tin, tout, hoverAt, x}) => {
+export const Menu: React.FC<{frame: number; tin: number; tout: number; hoverAt: number; x: number; y: number}> = ({frame, tin, tout, hoverAt, x, y}) => {
   const v = vis(frame, tin, tout, 0.08, -6);
   const k = sp(frame, tin, snap);
   const hovered = frame >= S(hoverAt);
   return (
-    <div style={{position: 'absolute', left: x, top: G.menuY, width: G.menuW, background: '#fff', borderRadius: 14, boxShadow: '0 16px 50px rgba(0,0,0,.22)', border: `1px solid ${c.line}`, padding: 8, fontSize: 22, whiteSpace: 'nowrap', transformOrigin: 'top left', opacity: v.opacity, transform: `scale(${0.9 + 0.1 * k}) translateY(${v.dy}px)`}}>
+    <div style={{position: 'absolute', left: x, top: y, width: G.menuW, background: '#fff', borderRadius: 14, boxShadow: '0 16px 50px rgba(0,0,0,.22)', border: `1px solid ${c.line}`, padding: 8, fontSize: 22, whiteSpace: 'nowrap', transformOrigin: 'top left', opacity: v.opacity, transform: `scale(${0.9 + 0.1 * k}) translateY(${v.dy}px)`}}>
       {['Copy', 'Paste'].map((t) => <div key={t} style={{padding: '9px 16px', color: c.ink2}}>{t}</div>)}
       <div style={{height: 1, background: c.line, margin: '6px 4px'}} />
       <div style={{display: 'flex', alignItems: 'center', gap: 12, padding: '9px 16px', borderRadius: 10, background: hovered ? c.blue : 'transparent', color: hovered ? '#fff' : c.ink, fontWeight: 600}}>
@@ -191,7 +191,7 @@ export const Tile: React.FC<{frame: number; i: number; marksAt: number}> = ({fra
 export const Pill: React.FC<{frame: number; tin: number; doneAt: number; tout: number}> = ({frame, tin, doneAt, tout}) => {
   const v = vis(frame, tin, tout, 0.15, 14);
   const done = frame >= S(doneAt);
-  const spin = ((frame * 14 * 30) / 60) % 360;
+  const spin = (frame * 7) % 360;
   const flip = clamp01((frame - S(doneAt)) / 8);
   return (
     <div style={{display: 'inline-flex', alignItems: 'center', gap: 12, padding: '12px 24px', borderRadius: 999, background: done ? c.greenInk : c.ink, color: '#fff', fontSize: 24, fontWeight: 600, boxShadow: '0 12px 30px rgba(0,0,0,.18)', opacity: v.opacity, filter: v.blur > 0.05 ? `blur(${v.blur}px)` : undefined, transform: `translateY(${v.dy}px) scale(${1 + 0.06 * Math.sin(flip * Math.PI)})`}}>
