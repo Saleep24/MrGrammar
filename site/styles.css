@@ -202,8 +202,7 @@ mark{background:var(--green-soft);color:var(--green-ink);border-radius:4px;paddi
 .logo-strip .site-mark{width:56px;height:56px;background:#fff;border-radius:14px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
 .logo-strip svg{width:28px;height:28px}
 .card-price{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:10px;text-align:right}
-.price-tag{font-size:12.5px;font-weight:600;letter-spacing:.02em;padding:5px 11px;border-radius:999px;background:#fff;color:var(--blue)}
-.price-note{font-size:13.5px;opacity:.85;max-width:22ch}
+.price-tag{font-size:12.5px;font-weight:700;letter-spacing:.02em;padding:6px 12px;border-radius:999px;background:#ffd60a;color:var(--ink)}
 .price{font-size:clamp(72px,8vw,112px);font-weight:700;letter-spacing:-.06em;line-height:.9}
 kbd.big{font-size:15px;padding:8px 14px;border-radius:9px}
 .center{text-align:center}
