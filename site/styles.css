@@ -46,7 +46,7 @@ mark{background:var(--green-soft);color:var(--green-ink);border-radius:4px;paddi
 .nav-inner{display:flex;align-items:center;justify-content:space-between;height:64px;gap:24px}
 .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;letter-spacing:-.02em}
 .mark{border-radius:22%;box-shadow:0 0 0 1px rgba(0,0,0,.06)}
-.nav-links{display:flex;gap:28px;font-size:14px;font-weight:500;color:var(--ink-2)}
+.nav-links{display:flex;gap:28px;font-size:14px;font-weight:500;color:var(--ink-2);white-space:nowrap}
 .nav-links a:hover{color:var(--ink)}
 
 .hero{padding:88px 0 56px;text-align:center;position:relative}
@@ -232,6 +232,8 @@ kbd.big{font-size:15px;padding:8px 14px;border-radius:9px}
   .drift-track{flex-wrap:wrap}
 }
 @media (max-width:900px){
+  .nav-inner{gap:16px}
+  .nav-links{gap:16px;font-size:13px}
   .screens{grid-template-columns:1fr}
   .bento{grid-template-columns:1fr 1fr}
   .card-wide{grid-column:span 2}
@@ -239,6 +241,10 @@ kbd.big{font-size:15px;padding:8px 14px;border-radius:9px}
   .reviews-grid{grid-template-columns:1fr}
   .rating{position:static}
   .story-grid{grid-template-columns:1fr}
+}
+@media (max-width:760px){
+  .brand span{display:none}
+  .nav-links a[href*="github"]{display:none}
 }
 @media (max-width:640px){
   .nav-links{display:none}
