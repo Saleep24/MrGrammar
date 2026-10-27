@@ -8,7 +8,7 @@ Key facts:
 - What it changes: spelling, grammar and punctuation only. It does not rewrite sentences or change tone.
 - Privacy: text leaves the browser only when the user asks for a correction and is never stored. No accounts, cookies or analytics. Corrections are produced by Google Gemini with Groq as a backup.
 - Limits: 10 corrections a minute and 200 a day per person, selections up to 10,000 characters.
-- Rating: 5.0 out of 5 on the Chrome Web Store.
+- Rating: 5.0 out of 5 from 8 ratings on the Chrome Web Store (October 2026).
 - Made by Saleep Shrestha. MIT licensed.
 
 ## Links
