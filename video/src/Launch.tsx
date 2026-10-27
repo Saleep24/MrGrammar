@@ -12,7 +12,7 @@ const T = {
   cursorIn: 0.3, selStart: 1.0, selEnd: 1.9, rclick: 2.0, menuIn: 2.05, hover: 2.75, click: 2.9, menuOut: 3.0,
   pill1: 3.05, swap1: 3.6, done1: 3.75, pill1Out: 5.0, cap1: 4.2, cap1Out: 7.3,
   card: 7.4, cardContent: 7.36, head2: 7.9, strikeFrom: 8.2, strikeTo: 9.6, badge: 9.9, head2Out: 11.8, cardOut: 11.98,
-  slack: 12.0, slackContent: 11.96, type: 12.4, sel2: 14.5, keys: 14.95, cap2: 15.0, pill2: 15.3, swap2: 16.0, pill2Out: 17.2, cap2Out: 18.3, slackOut: 18.48,
+  slack: 12.0, slackContent: 11.96, head3: 12.4, head3Out: 18.3, type: 12.4, sel2: 14.5, keys: 14.95, cap2: 15.0, pill2: 15.3, swap2: 16.0, pill2Out: 17.2, cap2Out: 18.3, slackOut: 18.48,
   grid: 18.5, tileContent: 18.46, cap3: 19.4, cap3Out: 22.8, worldOut: 22.9,
   promise: 23.2, promiseOut: 26.3, end: 26.5,
 };
@@ -64,7 +64,7 @@ export const Launch: React.FC = () => {
   for (let r = 0; r < L.rows; r++) for (let col = 0; col < L.cols; col++) if (!(col === L.center[0] && r === L.center[1])) cells.push([col, r]);
   const others = TILES.map((_, i) => i).filter((i) => i !== 2);
 
-  const cap1 = vis(frame, T.cap1, T.cap1Out), head2 = vis(frame, T.head2, T.head2Out, 0.14, 24), cap2 = vis(frame, T.cap2, T.cap2Out), cap3 = vis(frame, T.cap3, T.cap3Out);
+  const cap1 = vis(frame, T.cap1, T.cap1Out), head2 = vis(frame, T.head2, T.head2Out, 0.14, 24), head3 = vis(frame, T.head3, T.head3Out, 0.14, 24), cap2 = vis(frame, T.cap2, T.cap2Out), cap3 = vis(frame, T.cap3, T.cap3Out);
   const capStyle: React.CSSProperties = {position: 'absolute', left: 0, right: 0, textAlign: 'center', fontSize: L.cap, fontWeight: 600, letterSpacing: '-.02em', color: c.ink};
   const lines = ['Fixes spelling, grammar and punctuation.', 'Keeps your words and your tone.', 'No account needed.'];
   const vEnd = frame >= S(T.end);
@@ -95,6 +95,7 @@ export const Launch: React.FC = () => {
           </div>
           {!cap1.gone && <div style={{...capStyle, top: gt + states.gmail.h + 40 * s, ...visStyle(cap1)}}>Same message. Just fixed.</div>}
           {!head2.gone && <div style={{...capStyle, top: states.card.y - states.card.h / 2 - L.h2 * 1.15 - 44 * s, fontSize: L.h2, fontWeight: 700, letterSpacing: '-.035em', ...visStyle(head2)}}>Every other AI rewrites you.</div>}
+          {!head3.gone && <div style={{...capStyle, top: states.slack.y - states.slack.h / 2 - L.h2 * 1.15 - 44 * s, fontSize: L.h2, fontWeight: 700, letterSpacing: '-.035em', ...visStyle(head3)}}>MrGrammar only fixes the mistakes.</div>}
           {!cap2.gone && <div style={{...capStyle, top: states.slack.y + states.slack.h / 2 + 78 * s, ...visStyle(cap2)}}>Or press <kbd style={kbd}>⌘</kbd><kbd style={kbd}>⇧</kbd><kbd style={kbd}>E</kbd></div>}
           {!cap3.gone && <div style={{...capStyle, top: L.h / 2 + (L.gridH * L.zoom) / 2 + 48, ...visStyle(cap3)}}>Works where you write.</div>}
           {frame >= S(T.pill1) && frame < S(T.pill1Out + 0.3) && <div style={{position: 'absolute', left: L.cx, top: gt + states.gmail.h - 12 * s, transform: 'translateX(-50%)'}}><Pill frame={frame} tin={T.pill1} doneAt={T.done1} tout={T.pill1Out} /></div>}
