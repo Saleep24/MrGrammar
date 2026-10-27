@@ -6,6 +6,4 @@ export const c = {
   blue: '#2e43f0', blueSoft: '#eef0fe', greenSoft: '#dcf5e3', greenInk: '#146c3a', sel: '#b4d5fe', red: '#e0362e',
 };
 export const FPS = 60;
-// Scene timings were authored at 30 fps; F() converts those frame numbers
-export const F = (n: number) => Math.round((n * FPS) / 30);
-export const SCENES = {problem: 5 * FPS, demo: 10 * FPS, promise: 4 * FPS, where: 3 * FPS, end: 4 * FPS};
+export const DURATION = 30;
