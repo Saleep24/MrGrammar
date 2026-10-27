@@ -5,45 +5,61 @@ window.addEventListener('scroll', onScroll, { passive: true });
 
 document.getElementById('year').textContent = new Date().getFullYear();
 
-const reveals = document.querySelectorAll('.reveal');
-if ('IntersectionObserver' in window) {
-  const io = new IntersectionObserver((entries) => {
-    for (const e of entries) {
-      if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
-    }
-  }, { rootMargin: '0px 0px -5% 0px', threshold: 0.05 });
-  reveals.forEach((el) => io.observe(el));
-} else {
-  reveals.forEach((el) => el.classList.add('in'));
-}
-
-const demo = document.getElementById('demo');
 const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-const timeline = [[0, 1400], [1, 2200], [2, 1300], [3, 3600]];
-let step = 0;
-let timer = 0;
 
-function play() {
-  const [state, wait] = timeline[step];
-  demo.dataset.state = state;
-  step = (step + 1) % timeline.length;
-  timer = setTimeout(play, wait);
+const video = document.getElementById('video');
+const videoToggle = document.getElementById('video-toggle');
+function setVideoButton(paused) {
+  videoToggle.setAttribute('aria-pressed', String(paused));
+  videoToggle.setAttribute('aria-label', paused ? 'Play video' : 'Pause video');
 }
-
-function restart() {
-  clearTimeout(timer);
-  if (reduce) { demo.dataset.state = 3; return; }
-  step = 0;
-  play();
-}
-
 if (reduce) {
-  demo.dataset.state = 3;
-} else {
-  const start = new IntersectionObserver((entries) => {
-    if (entries.some((e) => e.isIntersecting)) { restart(); start.disconnect(); }
-  }, { threshold: 0.4 });
-  start.observe(demo);
+  video.removeAttribute('autoplay');
+  video.pause();
+  setVideoButton(true);
 }
+videoToggle.addEventListener('click', () => {
+  if (video.paused) video.play(); else video.pause();
+});
+video.addEventListener('play', () => setVideoButton(false));
+video.addEventListener('pause', () => setVideoButton(true));
+if (video.paused && !video.autoplay) setVideoButton(true);
 
-document.getElementById('replay').addEventListener('click', restart);
+const drift = document.getElementById('drift');
+const driftToggle = document.getElementById('drift-toggle');
+let driftPaused = false;
+driftToggle.addEventListener('click', () => {
+  driftPaused = !driftPaused;
+  driftToggle.setAttribute('aria-pressed', String(driftPaused));
+  driftToggle.setAttribute('aria-label', driftPaused ? 'Play examples' : 'Pause examples');
+});
+
+if (!reduce) {
+  const NORMAL = 32;
+  const SLOW = 6;
+  const rows = [...drift.querySelectorAll('.drift-row')].map((row) => ({
+    row, x: 0, speed: 0, width: 1, hover: false,
+    dir: row.classList.contains('drift-row-rev') ? -1 : 1,
+  }));
+  const measure = () => rows.forEach((r) => { r.width = r.row.firstElementChild.getBoundingClientRect().width + 16; });
+  measure();
+  window.addEventListener('resize', measure);
+  rows.forEach((r) => {
+    r.row.addEventListener('pointerenter', () => { r.hover = true; });
+    r.row.addEventListener('pointerleave', () => { r.hover = false; });
+  });
+  let last = performance.now();
+  const tick = (now) => {
+    const dt = Math.min(50, now - last) / 1000;
+    last = now;
+    for (const r of rows) {
+      const target = driftPaused ? 0 : r.hover ? SLOW : NORMAL;
+      r.speed += (target - r.speed) * Math.min(1, dt * 5);
+      r.x = (r.x + r.speed * r.dir * dt) % r.width;
+      if (r.x < 0) r.x += r.width;
+      r.row.style.transform = `translateX(${-r.x}px)`;
+    }
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
