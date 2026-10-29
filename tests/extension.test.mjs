@@ -100,3 +100,11 @@ test('every script a page loads exists and ships in the store zip', () => {
     }
   }
 });
+
+test('model output never reaches the page as HTML', () => {
+  for (const f of ['background.js', 'content-script.js', 'popup.js', 'options.js', 'shared.js']) {
+    const src = readFileSync(join(root, f), 'utf8');
+    assert.ok(!/\.(innerHTML|insertAdjacentHTML)\b/.test(src), `HTML sink in ${f}`);
+    assert.ok(!/setData\(['"]text\/html['"],\s*(newText|correctedText)\b/.test(src), `unescaped html payload in ${f}`);
+  }
+});

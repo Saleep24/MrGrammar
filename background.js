@@ -262,7 +262,8 @@ chrome.runtime.onInstalled.addListener(() => {
                     if (sel.rangeCount > 0 && !sel.isCollapsed) {
                       const dt = new DataTransfer();
                       dt.setData('text/plain', newText);
-                      dt.setData('text/html', newText.replace(/\n/g, '<br>'));
+                      const escaped = newText.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+                      dt.setData('text/html', escaped.replace(/\n/g, '<br>'));
                       editor.dispatchEvent(new ClipboardEvent('paste', {
                         clipboardData: dt, bubbles: true, cancelable: true
                       }));
