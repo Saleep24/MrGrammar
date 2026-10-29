@@ -10,9 +10,12 @@ const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 const GROQ_MODEL = "llama-3.3-70b-versatile";
 const PROVIDER_TIMEOUT_MS = 10000;
 const RATE_LIMIT_PER_MINUTE = 10;
-const RATE_LIMIT_PER_DAY = 200;
-const GLOBAL_LIMIT_PER_DAY = 2000;
+const RATE_LIMIT_PER_DAY = 500;
+const GLOBAL_LIMIT_PER_DAY = 20000;
 const REDIS_TIMEOUT_MS = 2000;
+const MAX_INPUT_CHARS = 10000;
+const MAX_OUTPUT_TOKENS = 8192;
+const STORE_EXTENSION_ID = "jpecnjmadbehcdpnlfdoobfbohajpdel";
 
 const SYSTEM_PROMPT = `You are a grammar-only correction tool. Your ONLY job is to fix:
 - Spelling errors
@@ -60,16 +63,32 @@ function hasValidAccessCode(code) {
   return timingSafeEqual(Buffer.from(actual), Buffer.from(expected));
 }
 
+// Origin is a client header, so this stops web pages and casual scripts, not a determined caller.
+// Allowed: the store build plus ALLOWED_EXTENSION_IDS entries, given as bare IDs or full origins.
 function isAllowedOrigin(origin) {
   if (!origin) return false;
-  return origin.startsWith("chrome-extension://");
+  const entries = [STORE_EXTENSION_ID, ...(process.env.ALLOWED_EXTENSION_IDS || "").split(",")];
+  return entries.some(e => {
+    const id = e.trim();
+    return id && origin === (id.includes("://") ? id : `chrome-extension://${id}`);
+  });
 }
 
-// Counts requests in Upstash Redis. Fails open so an outage never blocks users.
+// A fix is about as long as its input. Two tokens per character covers CJK and emoji worst cases.
+function outputTokenCap(text) {
+  return Math.min(MAX_OUTPUT_TOKENS, text.length * 2 + 64);
+}
+
+class TruncatedError extends Error {}
+
+// Counts requests in Upstash Redis. Fails closed when Redis cannot answer, so an outage never removes the limits.
 async function checkRateLimit(ip) {
   const url = process.env.KV_REST_API_URL;
   const token = process.env.KV_REST_API_TOKEN;
-  if (!url || !token) return { allowed: true };
+  if (!url || !token) {
+    console.warn("Rate limiting is off: KV_REST_API_URL / KV_REST_API_TOKEN not set");
+    return { allowed: true };
+  }
 
   const now = Date.now();
   const minuteKey = `rl:m:${ip}:${Math.floor(now / 60000)}`;
@@ -97,7 +116,9 @@ async function checkRateLimit(ip) {
     const perMinute = results[0]?.result;
     const perDay = results[2]?.result;
     const global = results[4]?.result;
-    if (typeof perMinute !== "number") return { allowed: true };
+    if (typeof perMinute !== "number" || typeof perDay !== "number" || typeof global !== "number") {
+      throw new Error("Unexpected Redis reply");
+    }
 
     if (perMinute > RATE_LIMIT_PER_MINUTE) {
       return { allowed: false, retryAfter: 60, error: "Too many requests. Try again in a minute." };
@@ -110,8 +131,8 @@ async function checkRateLimit(ip) {
     }
     return { allowed: true };
   } catch (error) {
-    console.error("Rate limit check failed, allowing request:", error.message);
-    return { allowed: true };
+    console.error("Rate limit check failed, refusing request:", error.message);
+    return { allowed: false, status: 503, retryAfter: 60, error: "Service is busy. Try again in a minute." };
   }
 }
 
@@ -131,7 +152,8 @@ async function callGemini(text, apiKey) {
       ],
       generationConfig: {
         temperature: 0.2,
-        maxOutputTokens: 8192
+        maxOutputTokens: outputTokenCap(text),
+        thinkingConfig: { thinkingBudget: 0 }
       }
     })
   });
@@ -142,6 +164,7 @@ async function callGemini(text, apiKey) {
   }
 
   const data = await response.json();
+  if (data.candidates?.[0]?.finishReason === "MAX_TOKENS") throw new TruncatedError("Gemini hit the output cap");
   return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null;
 }
 
@@ -161,7 +184,7 @@ async function callGroq(text, apiKey) {
         { role: "user", content: text }
       ],
       temperature: 0.2,
-      max_tokens: 8192
+      max_tokens: outputTokenCap(text)
     })
   });
 
@@ -171,6 +194,7 @@ async function callGroq(text, apiKey) {
   }
 
   const data = await response.json();
+  if (data.choices?.[0]?.finish_reason === "length") throw new TruncatedError("Groq hit the output cap");
   return data.choices?.[0]?.message?.content?.trim() || null;
 }
 
@@ -191,22 +215,26 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { text } = req.body;
+  const unlimited = hasValidAccessCode(req.headers["x-access-code"]);
+  if (!unlimited && !isAllowedOrigin(origin)) {
+    return res.status(403).json({ error: "This service only accepts requests from the MrGrammar extension." });
+  }
+
+  const text = req.body && typeof req.body === "object" ? req.body.text : undefined;
   if (!text || typeof text !== "string") {
     return res.status(400).json({ error: "Missing or invalid 'text' field" });
   }
 
-  if (text.length > 10000) {
+  if (text.length > MAX_INPUT_CHARS) {
     return res.status(400).json({ error: "Text too long (max 10,000 characters)" });
   }
 
-  const unlimited = hasValidAccessCode(req.headers["x-access-code"]);
   if (!unlimited) {
     const ip = String(req.headers["x-real-ip"] || req.headers["x-forwarded-for"] || "unknown").split(",")[0].trim();
     const limit = await checkRateLimit(ip);
     if (!limit.allowed) {
       res.setHeader("Retry-After", String(limit.retryAfter));
-      return res.status(429).json({ error: limit.error });
+      return res.status(limit.status || 429).json({ error: limit.error });
     }
   }
 
@@ -221,6 +249,7 @@ export default async function handler(req, res) {
 
   // Attempt 1: Gemini
   let emptyResponse = false;
+  let truncated = false;
   if (geminiKey) {
     try {
       const result = await callGemini(text, geminiKey);
@@ -229,6 +258,7 @@ export default async function handler(req, res) {
       }
       emptyResponse = true;
     } catch (error) {
+      if (error instanceof TruncatedError) truncated = true;
       console.error("Gemini failed, trying fallback:", error.message);
     }
   }
@@ -242,8 +272,14 @@ export default async function handler(req, res) {
       }
       emptyResponse = true;
     } catch (error) {
+      if (error instanceof TruncatedError) truncated = true;
       console.error("Groq fallback also failed:", error.message);
     }
+  }
+
+  // Never hand back a partial correction: it would replace the user's text
+  if (truncated) {
+    return res.status(422).json({ error: "Couldn't finish correcting this text. Try a shorter selection." });
   }
 
   // A provider answered but had nothing to return (e.g. safety block): leave text unchanged

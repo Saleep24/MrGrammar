@@ -2,7 +2,10 @@ import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import handler from '../proxy/api/grammar.js';
 
-const ENV_KEYS = ['GEMINI_API_KEY', 'GROQ_API_KEY', 'KV_REST_API_URL', 'KV_REST_API_TOKEN', 'ACCESS_CODE_HASH'];
+const ENV_KEYS = ['GEMINI_API_KEY', 'GROQ_API_KEY', 'KV_REST_API_URL', 'KV_REST_API_TOKEN', 'ACCESS_CODE_HASH', 'ALLOWED_EXTENSION_IDS'];
+const STORE_ORIGIN = 'chrome-extension://jpecnjmadbehcdpnlfdoobfbohajpdel';
+const CODE = 'test-access-code-1234';
+const CODE_HASH = '31bb56478b106542c00f81e2b9a105c72f7bdbbdf014eccb142e59602bfffd8d';
 let calls;
 
 function reply(status, body) {
@@ -34,7 +37,7 @@ function redisCounts(minute, day, global) {
 function req(overrides = {}) {
   return {
     method: 'POST',
-    headers: { origin: 'chrome-extension://abcdef', ...(overrides.headers || {}) },
+    headers: { origin: STORE_ORIGIN, ...(overrides.headers || {}) },
     body: 'body' in overrides ? overrides.body : { text: 'I goes to the store.' },
     ...(overrides.method ? { method: overrides.method } : {})
   };
@@ -86,13 +89,95 @@ test('caps text at 10,000 characters', async () => {
   assert.equal(calls.length, 0);
 });
 
-test('only extension origins get a CORS allow header', async () => {
+test('only the store extension gets a CORS allow header', async () => {
   const ext = res();
   await handler(req(), ext);
-  assert.equal(ext.headers['Access-Control-Allow-Origin'], 'chrome-extension://abcdef');
+  assert.equal(ext.headers['Access-Control-Allow-Origin'], STORE_ORIGIN);
   const web = res();
   await handler(req({ headers: { origin: 'https://evil.example' } }), web);
   assert.equal(web.headers['Access-Control-Allow-Origin'], undefined);
+});
+
+test('refuses requests that are not from the store extension', async () => {
+  for (const origin of [undefined, 'https://evil.example', 'chrome-extension://abcdef', 'chrome-extension://jpecnjmadbehcdpnlfdoobfbohajpdelx']) {
+    const r = res();
+    await handler(req({ headers: { origin } }), r);
+    assert.equal(r.statusCode, 403, String(origin));
+  }
+  assert.equal(calls.length, 0);
+});
+
+test('ALLOWED_EXTENSION_IDS adds dev builds without dropping the store build', async () => {
+  process.env.ALLOWED_EXTENSION_IDS = 'devbuild, moz-extension://ffbuild, ,';
+  for (const origin of [STORE_ORIGIN, 'chrome-extension://devbuild', 'moz-extension://ffbuild']) {
+    const r = res();
+    await handler(req({ headers: { origin } }), r);
+    assert.equal(r.statusCode, 200, origin);
+  }
+  const r = res();
+  await handler(req({ headers: { origin: 'chrome-extension://' } }), r);
+  assert.equal(r.statusCode, 403);
+});
+
+test('a valid access code is accepted from any origin', async () => {
+  process.env.ACCESS_CODE_HASH = CODE_HASH;
+  const r = res();
+  await handler(req({ headers: { origin: undefined, 'x-access-code': CODE } }), r);
+  assert.equal(r.statusCode, 200);
+  assert.equal(r.body.unlimited, true);
+});
+
+test('a malformed body is a 400, not a crash', async () => {
+  for (const body of [undefined, null, 'just a string', 42]) {
+    const r = res();
+    await handler(req({ body }), r);
+    assert.equal(r.statusCode, 400, String(body));
+  }
+});
+
+test('caps model output from the input length', async () => {
+  const short = res();
+  await handler(req({ body: { text: 'I goes.' } }), short);
+  assert.equal(calls.find(c => c.url.includes('generativelanguage')).body.generationConfig.maxOutputTokens, 78);
+  calls = [];
+  mockFetch({ gemini: () => reply(500, {}), groq: () => groqOk('x'), redis: () => redisCounts(1, 1, 1) });
+  const long = res();
+  await handler(req({ body: { text: 'a'.repeat(10000) } }), long);
+  assert.equal(calls.find(c => c.url.includes('generativelanguage')).body.generationConfig.maxOutputTokens, 8192);
+  assert.equal(calls.find(c => c.url.includes('groq')).body.max_tokens, 8192);
+});
+
+test('a truncated Gemini answer falls through to Groq', async () => {
+  mockFetch({
+    gemini: () => reply(200, { candidates: [{ finishReason: 'MAX_TOKENS', content: { parts: [{ text: 'I went to' }] } }] }),
+    groq: () => groqOk('I went to the store.'),
+    redis: () => redisCounts(1, 1, 1)
+  });
+  const r = res();
+  await handler(req(), r);
+  assert.equal(r.statusCode, 200);
+  assert.equal(r.body.provider, 'groq');
+});
+
+test('never returns a partial correction when both providers truncate', async () => {
+  mockFetch({
+    gemini: () => reply(200, { candidates: [{ finishReason: 'MAX_TOKENS', content: { parts: [{ text: 'I went to' }] } }] }),
+    groq: () => reply(200, { choices: [{ finish_reason: 'length', message: { content: 'I went to' } }] }),
+    redis: () => redisCounts(1, 1, 1)
+  });
+  const r = res();
+  await handler(req(), r);
+  assert.equal(r.statusCode, 422);
+  assert.equal(r.body.correctedText, undefined);
+  assert.match(r.body.error, /shorter/i);
+});
+
+test('a wrong access code from a foreign origin is refused, not rate limited', async () => {
+  process.env.ACCESS_CODE_HASH = CODE_HASH;
+  const r = res();
+  await handler(req({ headers: { origin: 'https://evil.example', 'x-access-code': 'nope' } }), r);
+  assert.equal(r.statusCode, 403);
+  assert.equal(r.headers['Access-Control-Allow-Origin'], undefined);
 });
 
 test('returns the Gemini correction and sends the user text', async () => {
@@ -157,21 +242,45 @@ test('returns 429 with Retry-After past the per-minute limit', async () => {
 test('returns the daily limit message past the per-day limit', async () => {
   process.env.KV_REST_API_URL = 'https://redis.example';
   process.env.KV_REST_API_TOKEN = 'tok';
-  mockFetch({ gemini: () => geminiOk('x'), groq: () => groqOk('x'), redis: () => redisCounts(1, 201, 201) });
+  mockFetch({ gemini: () => geminiOk('x'), groq: () => groqOk('x'), redis: () => redisCounts(1, 501, 501) });
   const r = res();
   await handler(req(), r);
   assert.equal(r.statusCode, 429);
   assert.match(r.body.error, /daily limit/i);
 });
 
-test('fails open when Redis errors', async () => {
+test('returns the capacity message past the global limit', async () => {
   process.env.KV_REST_API_URL = 'https://redis.example';
   process.env.KV_REST_API_TOKEN = 'tok';
-  mockFetch({ gemini: () => geminiOk('ok'), groq: () => groqOk('x'), redis: () => reply(500, {}) });
+  mockFetch({ gemini: () => geminiOk('x'), groq: () => groqOk('x'), redis: () => redisCounts(1, 1, 20001) });
   const r = res();
   await handler(req(), r);
+  assert.equal(r.statusCode, 429);
+  assert.match(r.body.error, /capacity/i);
+});
+
+test('fails closed with a 503 when Redis errors', async () => {
+  process.env.KV_REST_API_URL = 'https://redis.example';
+  process.env.KV_REST_API_TOKEN = 'tok';
+  for (const redis of [() => reply(500, {}), () => { throw new Error('timeout'); }, () => reply(200, [{ result: 'OK' }])]) {
+    calls = [];
+    mockFetch({ gemini: () => geminiOk('ok'), groq: () => groqOk('x'), redis });
+    const r = res();
+    await handler(req(), r);
+    assert.equal(r.statusCode, 503);
+    assert.equal(r.headers['Retry-After'], '60');
+    assert.ok(!calls.some(c => c.url.includes('generativelanguage')));
+  }
+});
+
+test('an access code still works when Redis is down', async () => {
+  process.env.KV_REST_API_URL = 'https://redis.example';
+  process.env.KV_REST_API_TOKEN = 'tok';
+  process.env.ACCESS_CODE_HASH = CODE_HASH;
+  mockFetch({ gemini: () => geminiOk('ok'), groq: () => groqOk('x'), redis: () => reply(500, {}) });
+  const r = res();
+  await handler(req({ headers: { 'x-access-code': CODE } }), r);
   assert.equal(r.statusCode, 200);
-  assert.equal(r.body.correctedText, 'ok');
 });
 
 test('uses the first address in x-forwarded-for for the limit key', async () => {
@@ -183,9 +292,6 @@ test('uses the first address in x-forwarded-for for the limit key', async () => 
   assert.ok(redis.body[0][1].includes('1.2.3.4'));
   assert.ok(!redis.body[0][1].includes('10.0.0.1'));
 });
-
-const CODE = 'test-access-code-1234';
-const CODE_HASH = '31bb56478b106542c00f81e2b9a105c72f7bdbbdf014eccb142e59602bfffd8d';
 
 test('a valid access code skips the rate limit and says so', async () => {
   process.env.KV_REST_API_URL = 'https://redis';

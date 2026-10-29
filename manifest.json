@@ -2,6 +2,7 @@
     "manifest_version": 3,
     "name": "MrGrammar",
     "version": "3.2",
+    "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnhBag6ZhzsILEJRHAYAwJUQDJZmoG+YEUgPwMoV3UjbZy8FSBz9fpGYPIeEMWAqAt9vt/LS2lB7DTI2Re0pLCEy+WXjuzprQr1m2wc1rF4OJNXWqLZ0o0ryrLiLfhS2qdL0nROWuaW45d7KmHhKkkSW0aZaTIjjcmflBim/S03wc6IlspR33v/ZmuTSQpcUC/muHkPjfFXK18M2jx3Fyy2l25lCylbqEPQH6mkAQc9oqWtdfWZIL7POTu+oWu7+xZ3jwUcVcNC9Omgm0OfQltRVrrE6DZMfqod5klPUD30RdFk2N0nfapQ6E7OpChPWlrhaF8HxJ0zwfQ+dqSkkHvQIDAQAB",
     "description": "Free AI-powered grammar correction directly in your browser. Compatible with Gmail, LinkedIn, Slack, and many more.",
     "permissions": ["contextMenus", "activeTab", "scripting", "storage"],
     "host_permissions": [

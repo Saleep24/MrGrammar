@@ -29,7 +29,7 @@ On the sites listed above the extension is ready as soon as the page loads. On a
 - **Google Docs is not supported.** Docs draws its text on a canvas rather than as regular page text, so there is nothing for the extension to read. You will see a short message saying so if you try. Real support would need a separate integration with Docs.
 - The LinkedIn post composer and some other heavily customised editors can reject outside changes. When that happens you will see "Couldn't replace the text" instead of a silent failure. Selecting the text again and retrying usually works.
 - Selections are capped at 10,000 characters.
-- The free service allows 10 corrections a minute and 200 a day per person. You will see a message if you hit the limit.
+- The free service allows 10 corrections a minute and 500 a day per person. You will see a message if you hit the limit.
 
 ## Keyboard shortcut
 

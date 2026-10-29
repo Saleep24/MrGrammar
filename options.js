@@ -40,7 +40,7 @@ async function saveAccessCode(event) {
       await chrome.storage.local.set({ accessCode: code });
       input.value = '';
       showCodeStatus('Code accepted. Limits are off on this device.', 'success');
-    } else if (response.ok || response.status === 429) {
+    } else if (response.ok || response.status === 429 || response.status === 403) {
       showCodeStatus('That code was not accepted.', 'error');
     } else {
       showCodeStatus('Could not reach the service. Try again in a moment.', 'error');
