@@ -10,9 +10,13 @@ const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 const GROQ_MODEL = "llama-3.3-70b-versatile";
 const PROVIDER_TIMEOUT_MS = 10000;
 const RATE_LIMIT_PER_MINUTE = 10;
-const RATE_LIMIT_PER_DAY = 200;
-const GLOBAL_LIMIT_PER_DAY = 2000;
+const RATE_LIMIT_PER_DAY = 500;
+const GLOBAL_LIMIT_PER_DAY = 20000;
 const REDIS_TIMEOUT_MS = 2000;
+const MAX_INPUT_CHARS = 10000;
+const MAX_OUTPUT_TOKENS = 8192;
+const STORE_EXTENSION_ID = "jpecnjmadbehcdpnlfdoobfbohajpdel";
+const BUSY = { allowed: false, retryAfter: 60, error: "Service is busy. Try again in a minute." };
 
 const SYSTEM_PROMPT = `You are a grammar-only correction tool. Your ONLY job is to fix:
 - Spelling errors
@@ -60,16 +64,26 @@ function hasValidAccessCode(code) {
   return timingSafeEqual(Buffer.from(actual), Buffer.from(expected));
 }
 
+// The store build plus any IDs listed in ALLOWED_EXTENSION_IDS (dev builds, other stores)
 function isAllowedOrigin(origin) {
   if (!origin) return false;
-  return origin.startsWith("chrome-extension://");
+  const ids = [STORE_EXTENSION_ID, ...(process.env.ALLOWED_EXTENSION_IDS || "").split(",")];
+  return ids.some(id => id.trim() && origin === `chrome-extension://${id.trim()}`);
 }
 
-// Counts requests in Upstash Redis. Fails open so an outage never blocks users.
+// A fix is never longer than its input, so the ceiling follows the input size
+function outputTokenCap(text) {
+  return Math.min(MAX_OUTPUT_TOKENS, Math.ceil(text.length / 2) + 64);
+}
+
+// Counts requests in Upstash Redis. Fails closed when Redis cannot answer, so an outage never removes the limits.
 async function checkRateLimit(ip) {
   const url = process.env.KV_REST_API_URL;
   const token = process.env.KV_REST_API_TOKEN;
-  if (!url || !token) return { allowed: true };
+  if (!url || !token) {
+    console.warn("Rate limiting is off: KV_REST_API_URL / KV_REST_API_TOKEN not set");
+    return { allowed: true };
+  }
 
   const now = Date.now();
   const minuteKey = `rl:m:${ip}:${Math.floor(now / 60000)}`;
@@ -97,7 +111,9 @@ async function checkRateLimit(ip) {
     const perMinute = results[0]?.result;
     const perDay = results[2]?.result;
     const global = results[4]?.result;
-    if (typeof perMinute !== "number") return { allowed: true };
+    if (typeof perMinute !== "number" || typeof perDay !== "number" || typeof global !== "number") {
+      throw new Error("Unexpected Redis reply");
+    }
 
     if (perMinute > RATE_LIMIT_PER_MINUTE) {
       return { allowed: false, retryAfter: 60, error: "Too many requests. Try again in a minute." };
@@ -110,8 +126,8 @@ async function checkRateLimit(ip) {
     }
     return { allowed: true };
   } catch (error) {
-    console.error("Rate limit check failed, allowing request:", error.message);
-    return { allowed: true };
+    console.error("Rate limit check failed, refusing request:", error.message);
+    return BUSY;
   }
 }
 
@@ -131,7 +147,7 @@ async function callGemini(text, apiKey) {
       ],
       generationConfig: {
         temperature: 0.2,
-        maxOutputTokens: 8192
+        maxOutputTokens: outputTokenCap(text)
       }
     })
   });
@@ -161,7 +177,7 @@ async function callGroq(text, apiKey) {
         { role: "user", content: text }
       ],
       temperature: 0.2,
-      max_tokens: 8192
+      max_tokens: outputTokenCap(text)
     })
   });
 
@@ -191,22 +207,26 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { text } = req.body;
+  const unlimited = hasValidAccessCode(req.headers["x-access-code"]);
+  if (!unlimited && !isAllowedOrigin(origin)) {
+    return res.status(403).json({ error: "This service only accepts requests from the MrGrammar extension." });
+  }
+
+  const text = req.body && typeof req.body === "object" ? req.body.text : undefined;
   if (!text || typeof text !== "string") {
     return res.status(400).json({ error: "Missing or invalid 'text' field" });
   }
 
-  if (text.length > 10000) {
+  if (text.length > MAX_INPUT_CHARS) {
     return res.status(400).json({ error: "Text too long (max 10,000 characters)" });
   }
 
-  const unlimited = hasValidAccessCode(req.headers["x-access-code"]);
   if (!unlimited) {
     const ip = String(req.headers["x-real-ip"] || req.headers["x-forwarded-for"] || "unknown").split(",")[0].trim();
     const limit = await checkRateLimit(ip);
     if (!limit.allowed) {
       res.setHeader("Retry-After", String(limit.retryAfter));
-      return res.status(429).json({ error: limit.error });
+      return res.status(limit === BUSY ? 503 : 429).json({ error: limit.error });
     }
   }
 
