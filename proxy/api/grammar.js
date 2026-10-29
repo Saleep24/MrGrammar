@@ -16,7 +16,6 @@ const REDIS_TIMEOUT_MS = 2000;
 const MAX_INPUT_CHARS = 10000;
 const MAX_OUTPUT_TOKENS = 8192;
 const STORE_EXTENSION_ID = "jpecnjmadbehcdpnlfdoobfbohajpdel";
-const BUSY = { allowed: false, retryAfter: 60, error: "Service is busy. Try again in a minute." };
 
 const SYSTEM_PROMPT = `You are a grammar-only correction tool. Your ONLY job is to fix:
 - Spelling errors
@@ -64,17 +63,23 @@ function hasValidAccessCode(code) {
   return timingSafeEqual(Buffer.from(actual), Buffer.from(expected));
 }
 
-// The store build plus any IDs listed in ALLOWED_EXTENSION_IDS (dev builds, other stores)
+// Origin is a client header, so this stops web pages and casual scripts, not a determined caller.
+// Allowed: the store build plus ALLOWED_EXTENSION_IDS entries, given as bare IDs or full origins.
 function isAllowedOrigin(origin) {
   if (!origin) return false;
-  const ids = [STORE_EXTENSION_ID, ...(process.env.ALLOWED_EXTENSION_IDS || "").split(",")];
-  return ids.some(id => id.trim() && origin === `chrome-extension://${id.trim()}`);
+  const entries = [STORE_EXTENSION_ID, ...(process.env.ALLOWED_EXTENSION_IDS || "").split(",")];
+  return entries.some(e => {
+    const id = e.trim();
+    return id && origin === (id.includes("://") ? id : `chrome-extension://${id}`);
+  });
 }
 
-// A fix is never longer than its input, so the ceiling follows the input size
+// A fix is about as long as its input. Two tokens per character covers CJK and emoji worst cases.
 function outputTokenCap(text) {
-  return Math.min(MAX_OUTPUT_TOKENS, Math.ceil(text.length / 2) + 64);
+  return Math.min(MAX_OUTPUT_TOKENS, text.length * 2 + 64);
 }
+
+class TruncatedError extends Error {}
 
 // Counts requests in Upstash Redis. Fails closed when Redis cannot answer, so an outage never removes the limits.
 async function checkRateLimit(ip) {
@@ -127,7 +132,7 @@ async function checkRateLimit(ip) {
     return { allowed: true };
   } catch (error) {
     console.error("Rate limit check failed, refusing request:", error.message);
-    return BUSY;
+    return { allowed: false, status: 503, retryAfter: 60, error: "Service is busy. Try again in a minute." };
   }
 }
 
@@ -147,7 +152,8 @@ async function callGemini(text, apiKey) {
       ],
       generationConfig: {
         temperature: 0.2,
-        maxOutputTokens: outputTokenCap(text)
+        maxOutputTokens: outputTokenCap(text),
+        thinkingConfig: { thinkingBudget: 0 }
       }
     })
   });
@@ -158,6 +164,7 @@ async function callGemini(text, apiKey) {
   }
 
   const data = await response.json();
+  if (data.candidates?.[0]?.finishReason === "MAX_TOKENS") throw new TruncatedError("Gemini hit the output cap");
   return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null;
 }
 
@@ -187,6 +194,7 @@ async function callGroq(text, apiKey) {
   }
 
   const data = await response.json();
+  if (data.choices?.[0]?.finish_reason === "length") throw new TruncatedError("Groq hit the output cap");
   return data.choices?.[0]?.message?.content?.trim() || null;
 }
 
@@ -226,7 +234,7 @@ export default async function handler(req, res) {
     const limit = await checkRateLimit(ip);
     if (!limit.allowed) {
       res.setHeader("Retry-After", String(limit.retryAfter));
-      return res.status(limit === BUSY ? 503 : 429).json({ error: limit.error });
+      return res.status(limit.status || 429).json({ error: limit.error });
     }
   }
 
@@ -241,6 +249,7 @@ export default async function handler(req, res) {
 
   // Attempt 1: Gemini
   let emptyResponse = false;
+  let truncated = false;
   if (geminiKey) {
     try {
       const result = await callGemini(text, geminiKey);
@@ -249,6 +258,7 @@ export default async function handler(req, res) {
       }
       emptyResponse = true;
     } catch (error) {
+      if (error instanceof TruncatedError) truncated = true;
       console.error("Gemini failed, trying fallback:", error.message);
     }
   }
@@ -262,8 +272,14 @@ export default async function handler(req, res) {
       }
       emptyResponse = true;
     } catch (error) {
+      if (error instanceof TruncatedError) truncated = true;
       console.error("Groq fallback also failed:", error.message);
     }
+  }
+
+  // Never hand back a partial correction: it would replace the user's text
+  if (truncated) {
+    return res.status(422).json({ error: "Couldn't finish correcting this text. Try a shorter selection." });
   }
 
   // A provider answered but had nothing to return (e.g. safety block): leave text unchanged

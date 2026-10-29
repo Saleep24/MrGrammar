@@ -23,13 +23,11 @@ jobs:
             -H 'Content-Type: application/json' -d '{"text":"I goes to the store."}')
           echo "POST without origin -> $code"
           test "$code" = "403"
-      - name: Correction round trip
-        env:
-          ACCESS_CODE: ${{ secrets.PROXY_ACCESS_CODE }}
+      - name: Free path corrects text
         run: |
-          if [ -z "$ACCESS_CODE" ]; then echo "PROXY_ACCESS_CODE secret not set, skipping"; exit 0; fi
           body=$(curl -s --max-time 40 -X POST "$PROXY" \
-            -H 'Content-Type: application/json' -H "X-Access-Code: $ACCESS_CODE" \
+            -H 'Content-Type: application/json' \
+            -H 'Origin: chrome-extension://jpecnjmadbehcdpnlfdoobfbohajpdel' \
             -d '{"text":"I goes to the store."}')
           echo "POST -> $body"
           echo "$body" | grep -q '"correctedText"'

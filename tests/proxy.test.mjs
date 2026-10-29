@@ -108,8 +108,8 @@ test('refuses requests that are not from the store extension', async () => {
 });
 
 test('ALLOWED_EXTENSION_IDS adds dev builds without dropping the store build', async () => {
-  process.env.ALLOWED_EXTENSION_IDS = 'devbuild, otherstore';
-  for (const origin of [STORE_ORIGIN, 'chrome-extension://devbuild', 'chrome-extension://otherstore']) {
+  process.env.ALLOWED_EXTENSION_IDS = 'devbuild, moz-extension://ffbuild, ,';
+  for (const origin of [STORE_ORIGIN, 'chrome-extension://devbuild', 'moz-extension://ffbuild']) {
     const r = res();
     await handler(req({ headers: { origin } }), r);
     assert.equal(r.statusCode, 200, origin);
@@ -138,13 +138,46 @@ test('a malformed body is a 400, not a crash', async () => {
 test('caps model output from the input length', async () => {
   const short = res();
   await handler(req({ body: { text: 'I goes.' } }), short);
-  assert.equal(calls.find(c => c.url.includes('generativelanguage')).body.generationConfig.maxOutputTokens, 68);
+  assert.equal(calls.find(c => c.url.includes('generativelanguage')).body.generationConfig.maxOutputTokens, 78);
   calls = [];
   mockFetch({ gemini: () => reply(500, {}), groq: () => groqOk('x'), redis: () => redisCounts(1, 1, 1) });
   const long = res();
   await handler(req({ body: { text: 'a'.repeat(10000) } }), long);
-  assert.equal(calls.find(c => c.url.includes('generativelanguage')).body.generationConfig.maxOutputTokens, 5064);
-  assert.equal(calls.find(c => c.url.includes('groq')).body.max_tokens, 5064);
+  assert.equal(calls.find(c => c.url.includes('generativelanguage')).body.generationConfig.maxOutputTokens, 8192);
+  assert.equal(calls.find(c => c.url.includes('groq')).body.max_tokens, 8192);
+});
+
+test('a truncated Gemini answer falls through to Groq', async () => {
+  mockFetch({
+    gemini: () => reply(200, { candidates: [{ finishReason: 'MAX_TOKENS', content: { parts: [{ text: 'I went to' }] } }] }),
+    groq: () => groqOk('I went to the store.'),
+    redis: () => redisCounts(1, 1, 1)
+  });
+  const r = res();
+  await handler(req(), r);
+  assert.equal(r.statusCode, 200);
+  assert.equal(r.body.provider, 'groq');
+});
+
+test('never returns a partial correction when both providers truncate', async () => {
+  mockFetch({
+    gemini: () => reply(200, { candidates: [{ finishReason: 'MAX_TOKENS', content: { parts: [{ text: 'I went to' }] } }] }),
+    groq: () => reply(200, { choices: [{ finish_reason: 'length', message: { content: 'I went to' } }] }),
+    redis: () => redisCounts(1, 1, 1)
+  });
+  const r = res();
+  await handler(req(), r);
+  assert.equal(r.statusCode, 422);
+  assert.equal(r.body.correctedText, undefined);
+  assert.match(r.body.error, /shorter/i);
+});
+
+test('a wrong access code from a foreign origin is refused, not rate limited', async () => {
+  process.env.ACCESS_CODE_HASH = CODE_HASH;
+  const r = res();
+  await handler(req({ headers: { origin: 'https://evil.example', 'x-access-code': 'nope' } }), r);
+  assert.equal(r.statusCode, 403);
+  assert.equal(r.headers['Access-Control-Allow-Origin'], undefined);
 });
 
 test('returns the Gemini correction and sends the user text', async () => {
