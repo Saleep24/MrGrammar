@@ -670,7 +670,10 @@ async function replaceTextInEditor(correctedText, originalText) {
           range.deleteContents();
           range.insertNode(document.createTextNode(correctedText));
         } else {
-          composeArea.innerHTML += correctedText;
+          correctedText.split('\n').forEach((line, i) => {
+            if (i > 0) composeArea.appendChild(document.createElement('br'));
+            composeArea.appendChild(document.createTextNode(line));
+          });
         }
         console.log("Text inserted in Gmail compose area");
         return true;
