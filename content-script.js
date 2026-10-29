@@ -670,10 +670,17 @@ async function replaceTextInEditor(correctedText, originalText) {
           range.deleteContents();
           range.insertNode(document.createTextNode(correctedText));
         } else {
-          correctedText.split('\n').forEach((line, i) => {
+          const lines = correctedText.replace(/\r\n?/g, '\n').replace(/\n$/, '').split('\n');
+          let last = null;
+          lines.forEach((line, i) => {
             if (i > 0) composeArea.appendChild(document.createElement('br'));
-            composeArea.appendChild(document.createTextNode(line));
+            last = composeArea.appendChild(document.createTextNode(line));
           });
+          const caret = document.createRange();
+          caret.setStartAfter(last);
+          caret.collapse(true);
+          window.getSelection().removeAllRanges();
+          window.getSelection().addRange(caret);
         }
         console.log("Text inserted in Gmail compose area");
         return true;
