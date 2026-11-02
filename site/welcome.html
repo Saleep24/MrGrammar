@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MrGrammar is installed</title>
+  <meta name="description" content="Try your first MrGrammar fix.">
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="assets/favicon.png" type="image/png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="welcome">
+  <main class="wrap welcome-inner">
+    <a class="brand" href="/" aria-label="MrGrammar home">
+      <img class="mark" src="assets/icon.png" alt="" width="28" height="28">
+      <span>MrGrammar</span>
+    </a>
+
+    <h1 class="welcome-title">MrGrammar is installed. Try your first fix.</h1>
+
+    <ol class="welcome-steps">
+      <li>The text in the box below is already selected. If you click away, select it again.</li>
+      <li>Right-click it and choose <strong>Fix Grammar with AI</strong>, or press <kbd id="shortcut">Ctrl+Shift+E</kbd>.</li>
+    </ol>
+
+    <div id="try-box" class="try-box" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Practice text" spellcheck="false">Hi Sam, i has attached teh report you ask for. Let me no if their is anything else you need.</div>
+
+    <p id="result" class="welcome-result" role="status" hidden>That's it. It works the same way in Gmail, Outlook, Slack, LinkedIn, Facebook and Messenger.</p>
+
+    <p class="welcome-note">If the shortcut does nothing, another extension may be using it. The right-click menu still works.</p>
+  </main>
+
+  <script src="welcome.js"></script>
+</body>
+</html>
