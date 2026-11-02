@@ -260,3 +260,13 @@ kbd.big{font-size:15px;padding:8px 14px;border-radius:9px}
   .bubble{max-width:100%}
   .footer-inner{flex-direction:column;align-items:flex-start}
 }
+
+.welcome-inner{max-width:640px;padding:clamp(32px,7vh,72px) 0 40px}
+.welcome-title{font-size:clamp(30px,5vw,44px);font-weight:700;letter-spacing:-.03em;line-height:1.1;margin-top:32px}
+.welcome-steps{list-style:decimal;margin:24px 0 0 22px;font-size:17px;color:var(--ink-2)}
+.welcome-steps li+li{margin-top:8px}
+.welcome-steps strong{color:var(--ink);font-weight:600}
+.try-box{margin-top:24px;padding:20px;min-height:112px;background:var(--card);border:1px solid var(--line);border-radius:14px;font-size:18px;line-height:1.5}
+.welcome-result{margin-top:16px;padding:12px 16px;border-radius:12px;background:var(--green-soft);color:var(--green-ink);font-weight:500}
+.welcome-result[hidden]{display:none}
+.welcome-note{margin-top:20px;font-size:14px;color:var(--ink-3)}

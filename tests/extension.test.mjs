@@ -108,3 +108,11 @@ test('model output never reaches the page as HTML', () => {
     assert.ok(!/setData\(['"]text\/html['"],\s*(newText|correctedText)\b/.test(src), `unescaped html payload in ${f}`);
   }
 });
+
+test('the welcome page opens on first install only and stays out of search', () => {
+  assert.match(background, /reason === "install"\) \{\s*chrome\.tabs\.create\(\{ url: WELCOME_URL \}\)/);
+  assert.ok(background.includes('WELCOME_URL = "https://mrgrammar.me/welcome"'));
+  const page = readFileSync(join(root, 'site/welcome.html'), 'utf8');
+  assert.ok(page.includes('name="robots" content="noindex"'));
+  assert.ok(!readFileSync(join(root, 'site/sitemap.xml'), 'utf8').includes('welcome'));
+});

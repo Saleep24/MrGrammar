@@ -1,10 +1,13 @@
-chrome.runtime.onInstalled.addListener(() => {
+chrome.runtime.onInstalled.addListener(({ reason }) => {
     chrome.contextMenus.create({
       id: "fixGrammar",
       title: "Fix Grammar with AI",
       contexts: ["selection"]
     });
     console.log("Context menu created!"); 
+    if (reason === "install") {
+      chrome.tabs.create({ url: WELCOME_URL });
+    }
   });
   chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     if (info.menuItemId === "fixGrammar" && info.selectionText) {
@@ -394,6 +397,7 @@ chrome.runtime.onInstalled.addListener(() => {
     }
   }
   const PROXY_URL = "https://proxy-khaki-eight-20.vercel.app/api/grammar";
+  const WELCOME_URL = "https://mrgrammar.me/welcome";
 
   function friendlyError(message) {
     const error = new Error(message);
