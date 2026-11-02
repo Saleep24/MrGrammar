@@ -114,5 +114,6 @@ test('the welcome page opens on first install only and stays out of search', () 
   assert.ok(background.includes('WELCOME_URL = "https://mrgrammar.me/welcome"'));
   const page = readFileSync(join(root, 'site/welcome.html'), 'utf8');
   assert.ok(page.includes('name="robots" content="noindex"'));
+  assert.ok(!/umami|googleapis/.test(page), 'the page opened on install must load no third parties');
   assert.ok(!readFileSync(join(root, 'site/sitemap.xml'), 'utf8').includes('welcome'));
 });

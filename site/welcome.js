@@ -12,16 +12,16 @@ selection.removeAllRanges();
 selection.addRange(range);
 
 // The extension changes the text without firing beforeinput, which is how a fix differs from typing
+const original = box.textContent;
 let typing = false;
-box.addEventListener('beforeinput', () => { typing = true; });
+box.addEventListener('beforeinput', () => {
+  typing = true;
+  setTimeout(() => { typing = false; });
+});
 
 const observer = new MutationObserver(() => {
-  if (typing) {
-    typing = false;
-    return;
-  }
+  if (typing || box.textContent === original) return;
   result.hidden = false;
   observer.disconnect();
-  if (window.umami) window.umami.track('welcome-first-fix');
 });
 observer.observe(box, { childList: true, characterData: true, subtree: true });

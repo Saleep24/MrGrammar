@@ -34,7 +34,7 @@ We do not sell or share your data with anyone else.
 
 ## The website
 
-The site at mrgrammar.me uses Umami, a cookie-free analytics service, to count page visits and see which pages and referring sites bring people in. It stores no cookies, no IP addresses and no personal identifiers, and it has nothing to do with the extension or the text you correct. When you install the extension, it opens a welcome page on this site. That page counts visits and whether its practice box was fixed, but never its text.
+The site at mrgrammar.me uses Umami, a cookie-free analytics service, to count page visits and see which pages and referring sites bring people in. It stores no cookies, no IP addresses and no personal identifiers, and it has nothing to do with the extension or the text you correct. When you install the extension, it opens a welcome page on this site. That page does not use Umami.
 
 ## Changes and contact
 
